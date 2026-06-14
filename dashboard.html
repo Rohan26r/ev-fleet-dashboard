@@ -1,0 +1,4290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoltFleet – EV Fleet Management System</title>
+  <!-- Bebas Neue and Rajdhani Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      /* DEFAULT LIGHT THEME */
+      --orange: #ff5a00;
+      --orange-glow: rgba(255, 90, 0, 0.15);
+      --white: #121212; /* dark text */
+      --dark: #f4f5f7; /* light bg */
+      --glass: rgba(255, 255, 255, 0.82); /* light glass */
+      --border-color: rgba(255, 90, 0, 0.2);
+      --text: #1a1a1a;
+      --text-muted: #555;
+      --success: #008f4c;
+      --success-glow: rgba(0, 143, 76, 0.1);
+      --warning: #cc8800;
+      --alert: #d62453;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --kpi-card-bg: rgba(255, 255, 255, 0.9);
+      --input-bg: #ffffff;
+      --tr-hover-bg: rgba(255, 90, 0, 0.05);
+      --body-overlay-bg: radial-gradient(ellipse at center, transparent 40%, rgba(255, 255, 255, 0.55) 100%);
+      --body-scanline-color: rgba(255, 255, 255, 0.07);
+      --role-btn-bg: rgba(0, 0, 0, 0.03);
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    [data-theme="dark"] {
+      --orange: #ff5a00;
+      --orange-glow: rgba(255, 90, 0, 0.35);
+      --white: #e7decd;
+      --dark: #080808;
+      --glass: rgba(10, 10, 14, 0.78);
+      --border-color: rgba(255, 90, 0, 0.2);
+      --text: #e7decd;
+      --text-muted: #888;
+      --success: #00ff88;
+      --success-glow: rgba(0, 255, 136, 0.2);
+      --warning: #ffaa00;
+      --alert: #ff3366;
+      --card-bg: var(--glass);
+      --kpi-card-bg: rgba(10, 10, 14, 0.9);
+      --input-bg: #0f0f14;
+      --tr-hover-bg: rgba(255, 90, 0, 0.03);
+      --body-overlay-bg: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+      --body-scanline-color: rgba(0, 0, 0, 0.15);
+      --role-btn-bg: rgba(255, 255, 255, 0.02);
+      --card-shadow: 0 0 40px rgba(255, 90, 0, 0.03), 0 15px 45px rgba(0, 0, 0, 0.7);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* All overlays removed for cleaner, faster UI */
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--orange);
+    }
+
+    /* Outer Layout */
+    #app-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Sidebar - Motorsport style */
+    .sidebar {
+      width: 270px;
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-right: 1px solid var(--border-color);
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 3px;
+      color: var(--white);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-shadow: 0 0 15px var(--orange-glow);
+    }
+    .sidebar-header span {
+      color: var(--orange);
+    }
+    .sidebar-header i {
+      color: var(--orange);
+      filter: drop-shadow(0 0 8px var(--orange-glow));
+    }
+
+    .menu-group {
+      margin-bottom: 1.5rem;
+    }
+    .menu-label {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 0.6rem;
+      font-weight: 700;
+      padding-left: 8px;
+    }
+
+    .menu-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: 1px solid transparent;
+      border-radius: 8px;
+    }
+    .menu-item:hover {
+      color: var(--orange);
+      background: rgba(255, 90, 0, 0.04);
+      border-color: rgba(255, 90, 0, 0.1);
+    }
+    .menu-item.active {
+      color: var(--white);
+      background: rgba(255, 90, 0, 0.12);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--orange);
+      box-shadow: inset 0 0 10px rgba(255, 90, 0, 0.1);
+      text-shadow: 0 0 8px rgba(255, 90, 0, 0.3);
+    }
+    .menu-item.active i {
+      color: var(--orange);
+      filter: drop-shadow(0 0 4px var(--orange));
+    }
+    .menu-item i {
+      font-size: 1.1rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.5rem;
+    }
+
+    .user-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+    }
+    .user-card .email {
+      font-size: 0.85rem;
+      color: var(--white);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-card .badge {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(255, 90, 0, 0.12);
+      color: var(--orange);
+      border: 1px solid var(--border-color);
+      padding: 2px 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-logout {
+      width: 100%;
+      background: transparent;
+      color: #999;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      transition: all 0.2s;
+      border-radius: 8px;
+    }
+    .btn-logout:hover {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange);
+      box-shadow: 0 0 15px var(--orange-glow);
+    }
+
+    /* Delete buttons - red with high contrast text */
+    .btn-delete, button[onclick*="delete"] {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border: 1px solid #b91c1c !important;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-delete:hover, button[onclick*="delete"]:hover {
+      background: #b91c1c !important;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+      transform: translateY(-1px);
+    }
+    [data-theme="dark"] .btn-delete, [data-theme="dark"] button[onclick*="delete"] {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border-color: #b91c1c !important;
+    }
+
+    /* Main Viewport Container */
+    .viewport {
+      flex: 1;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 2.5rem;
+      position: relative;
+      scroll-behavior: smooth;
+    }
+
+    /* Header controls */
+    .viewport-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+    .viewport-header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.6rem;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-shadow: 0 0 10px rgba(255,255,255,0.05);
+    }
+    .viewport-header h1 span {
+      color: var(--orange);
+    }
+    
+    .hud-clock {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      color: var(--orange);
+      background: rgba(255, 90, 0, 0.05);
+      border: 1px solid var(--border-color);
+      padding: 6px 16px;
+      text-shadow: 0 0 8px var(--orange-glow);
+    }
+
+    /* Glass Cards - reduced blur for better performance */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-top: 3px solid var(--orange);
+      padding: 1.5rem;
+      position: relative;
+      box-shadow: var(--card-shadow);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card:hover {
+      box-shadow: 0 12px 36px rgba(0,0,0,0.06);
+    }
+
+    .card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 1.5px;
+      color: var(--white);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 90, 0, 0.1);
+      padding-bottom: 6px;
+    }
+    .card-title i {
+      color: var(--orange);
+    }
+
+    /* KPI grid */
+    .kpi-row-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 1.5px;
+      color: var(--orange);
+      margin-bottom: 0.8rem;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kpi-row-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+      background: var(--kpi-card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 2px solid var(--border-top-color, var(--orange));
+      padding: 1.2rem;
+      position: relative;
+    }
+    .kpi-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .kpi-card-header i {
+      color: var(--border-top-color, var(--orange));
+    }
+    .kpi-card-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      color: var(--white);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.02);
+    }
+    .kpi-card-val span {
+      font-size: 0.9rem;
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text-muted);
+      margin-left: 3px;
+      text-shadow: none;
+    }
+
+    /* Page container views */
+    .page-view {
+      display: none;
+      animation: tabFadeIn 0.3s ease-out forwards;
+    }
+    .page-view.active {
+      display: block;
+    }
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Layout division for overview (2 columns: telemetry + alerts) */
+    .overview-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 1100px) {
+      .overview-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 12px 14px;
+      font-size: 0.9rem;
+    }
+    th {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: var(--orange);
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+    }
+    td {
+      border-bottom: 1px solid rgba(255, 90, 0, 0.05);
+      color: var(--text);
+      font-weight: 500;
+    }
+    tr:hover td {
+      background: var(--tr-hover-bg);
+    }
+
+    /* Buttons exactly like login */
+    .btn-submit {
+      background: var(--orange);
+      border: none;
+      color: #fff;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      padding: 8px 18px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .btn-submit:hover {
+      background: #ff5f20;
+      box-shadow: 0 0 20px rgba(255, 90, 0, 0.5);
+    }
+
+    /* Small action buttons */
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--orange);
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: var(--orange);
+      color: #000;
+      box-shadow: 0 0 10px var(--orange-glow);
+    }
+
+    /* Badges & Status */
+    .status-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1px solid transparent;
+      letter-spacing: 1px;
+    }
+    .status-badge.running {
+      background: rgba(0, 255, 136, 0.08);
+      color: var(--success);
+      border-color: rgba(0, 255, 136, 0.2);
+    }
+    .status-badge.charging {
+      background: rgba(0, 170, 255, 0.08);
+      color: var(--primary, #00aaff);
+      border-color: rgba(0, 170, 255, 0.2);
+    }
+    .status-badge.garage {
+      background: rgba(255, 170, 0, 0.08);
+      color: var(--warning);
+      border-color: rgba(255, 170, 0, 0.2);
+    }
+
+    /* Battery bar */
+    .battery-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: var(--border-color);
+      margin-top: 4px;
+    }
+    .battery-bar-fill {
+      height: 100%;
+      background: var(--orange);
+      box-shadow: 0 0 5px var(--orange-glow);
+    }
+
+    /* Alerts List cards */
+    .alerts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 450px;
+      overflow-y: auto;
+    }
+    .alert-item {
+      background: var(--role-btn-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--alert-color, var(--orange));
+      padding: 10px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      border-radius: 2px;
+    }
+    .alert-item i {
+      color: var(--alert-color, var(--orange));
+      font-size: 1.1rem;
+      margin-top: 2px;
+    }
+    .alert-item-msg {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--white);
+    }
+    .alert-item-time {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* Dropdowns & Forms */
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      background: var(--role-btn-bg);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      margin-bottom: 1.5rem;
+      border-radius: 2px;
+    }
+    .form-row label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: var(--orange);
+    }
+    .form-select {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      font-family: inherit;
+      font-weight: 600;
+      outline: none;
+      min-width: 160px;
+    }
+    .form-select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 10px var(--orange-glow);
+    }
+
+    /* Grid layout for detail panels */
+    .details-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .details-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .spec-block {
+      background: var(--role-btn-bg);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+    }
+    .spec-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .spec-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    /* Brand Selector grid */
+    .brands-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .brands-selector-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .brand-selector-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .brand-selector-card:hover {
+      border-color: var(--orange);
+      background: rgba(255, 90, 0, 0.04);
+      transform: translateY(-2px);
+    }
+    .brand-selector-card.active {
+      background: rgba(255, 90, 0, 0.12);
+      border-color: var(--orange);
+      box-shadow: 0 0 20px var(--orange-glow);
+    }
+    .brand-selector-card h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin-top: 8px;
+    }
+    .brand-selector-card i {
+      font-size: 2rem;
+      color: var(--orange);
+    }
+
+    /* Driver Profile split layout */
+    .driver-profile-split {
+      display: grid;
+      grid-template-columns: 1.1fr 2fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .driver-profile-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Quick Navigation Buttons */
+    .quick-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, rgba(255,90,0,0.1), rgba(255,90,0,0.05));
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--orange);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .quick-nav-btn:hover {
+      background: linear-gradient(135deg, rgba(255,90,0,0.2), rgba(255,90,0,0.1));
+      border-color: var(--orange);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255,90,0,0.3);
+    }
+    .quick-nav-btn i {
+      font-size: 1rem;
+    }
+
+    .driver-list-panel {
+      max-height: 500px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .driver-list-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .driver-list-row:hover {
+      background: rgba(255, 90, 0, 0.03);
+      border-color: rgba(255, 90, 0, 0.15);
+    }
+    .driver-list-row.active {
+      background: rgba(255, 90, 0, 0.1);
+      border-color: var(--orange);
+      box-shadow: 0 0 10px rgba(255, 90, 0, 0.1);
+    }
+    .driver-list-row h4 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+    .driver-list-row p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Eco circular dial exact styling */
+    .eco-dial-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: var(--role-btn-bg);
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+    .eco-dial-gauge {
+      width: 130px;
+      height: 130px;
+      position: relative;
+      margin-bottom: 0.8rem;
+    }
+    .eco-dial-gauge svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .eco-dial-gauge circle {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .eco-dial-bg {
+      stroke: var(--border-color);
+    }
+    .eco-dial-fill {
+      stroke: var(--orange);
+      stroke-dasharray: 345;
+      stroke-dashoffset: 345;
+      transition: stroke-dashoffset 0.8s ease-out;
+      filter: drop-shadow(0 0 5px var(--orange-glow));
+    }
+    .eco-dial-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      color: var(--white);
+      text-align: center;
+    }
+    .eco-dial-text span {
+      display: block;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: -6px;
+    }
+
+    /* Input group design for predictions */
+    .predict-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+    @media (max-width: 600px) {
+      .predict-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .predict-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .predict-field label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .predict-field input, .predict-field select {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      font-family: inherit;
+      font-weight: 600;
+      outline: none;
+    }
+    .predict-field input:focus, .predict-field select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 8px var(--orange-glow);
+    }
+
+    .prediction-output-card {
+      background: radial-gradient(circle at center, rgba(255, 90, 0, 0.08) 0%, var(--card-bg) 80%);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 30px rgba(255, 90, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+    }
+    .prediction-output-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4.5rem;
+      color: var(--orange);
+      text-shadow: 0 0 25px var(--orange-glow);
+      line-height: 1;
+      margin: 0.8rem 0;
+    }
+    .prediction-output-val span {
+      font-size: 1.5rem;
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text-muted);
+      text-shadow: none;
+      margin-left: 4px;
+    }
+
+    /* Driver Dashboard Specific Grid */
+    .driver-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1000px) {
+      .driver-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 650px) {
+      .driver-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Theme Toggle HUD Button */
+    .theme-toggle-btn {
+      background: var(--glass);
+      border: 1px solid var(--border-color);
+      color: var(--orange);
+      width: 38px;
+      height: 38px;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.25s ease;
+      box-shadow: inset 0 0 5px rgba(255, 90, 0, 0.05);
+    }
+    .theme-toggle-btn:hover {
+      border-color: var(--orange);
+      color: var(--white);
+      background: rgba(255, 90, 0, 0.08);
+      box-shadow: 0 0 12px var(--orange-glow);
+      transform: scale(1.05);
+    }
+    @keyframes blink-shadow {
+      from { box-shadow: 0 0 10px rgba(255, 51, 102, 0.15); border-color: rgba(255, 51, 102, 0.6); }
+      to { box-shadow: 0 0 25px rgba(255, 51, 102, 0.5); border-color: rgba(255, 51, 102, 1); }
+    }
+    
+    /* Hidden class to show/hide admin vs driver views */
+    .hidden {
+      display: none !important;
+    }
+    
+    /* Remove scanlines from vehicle image area */
+    #vehicle-image-container {
+      width: 100%;
+      max-height: 180px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      padding: 1rem;
+      position: relative;
+      isolation: isolate;
+    }
+    /* Create opaque overlay that blocks scanlines */
+    #vehicle-image-container::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      background: var(--dark);
+      z-index: 0;
+      border-radius: 8px;
+    }
+    /* Card background on top */
+    #vehicle-image-container::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      z-index: 1;
+      border-radius: 8px;
+    }
+    #vehicle-image-container img {
+      max-width: 100%;
+      max-height: 150px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+      position: relative;
+      z-index: 2;
+    }
+    #vehicle-image-container #vehicle-image-placeholder {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-style: italic;
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Driver vehicle image - smaller compact version */
+    #driver-vehicle-image-container {
+      width: 100%;
+      max-height: 120px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 6px;
+      padding: 0.75rem;
+      position: relative;
+      isolation: isolate;
+    }
+    #driver-vehicle-image-container::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      background: var(--dark);
+      z-index: 0;
+      border-radius: 6px;
+    }
+    #driver-vehicle-image-container::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 90, 0, 0.03);
+      border: 1px solid rgba(255, 90, 0, 0.1);
+      z-index: 1;
+      border-radius: 6px;
+    }
+    #driver-vehicle-image-container img {
+      max-width: 100%;
+      max-height: 100px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+      position: relative;
+      z-index: 2;
+    }
+    #driver-vehicle-image-container #driver-vehicle-image-placeholder {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-style: italic;
+      position: relative;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-container">
+
+    <!-- LEFT SIDEBAR (ADMIN / FLEET MENU) -->
+    <aside class="sidebar" id="main-sidebar">
+      <div class="sidebar-header">
+        <i class="fa-solid fa-gauge-high"></i> VOLT<span>FLEET</span>
+      </div>
+
+      <!-- Admin Menu Panel -->
+      <div class="menu-group" id="admin-menu-group">
+        <div class="menu-label">System Control</div>
+        <ul class="menu-list">
+          <li>
+            <a class="menu-item active" onclick="switchAdminTab('overview', this)">
+              <i class="fa-solid fa-chart-bar"></i> Fleet Overview
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('vehicles', this)">
+              <i class="fa-solid fa-car"></i> Vehicle Details
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('brands', this)">
+              <i class="fa-solid fa-industry"></i> Brand Analytics
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('drivers', this)">
+              <i class="fa-solid fa-user-group"></i> Driver Analytics
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('driver-management', this)">
+              <i class="fa-solid fa-user-gear"></i> Driver Management
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('charging', this)">
+              <i class="fa-solid fa-bolt"></i> Charging Analytics
+            </a>
+          </li>
+          <li>
+            <a class="menu-item" onclick="switchAdminTab('alerts', this)">
+              <i class="fa-solid fa-triangle-exclamation"></i> Alerts Center
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Sidebar Bottom Details -->
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="email" id="nav-user-email">--</div>
+          <div class="badge" id="nav-user-role">--</div>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i> DISCONNECT
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="viewport">
+
+      <!-- HEADER HUD -->
+      <header class="viewport-header">
+        <div>
+          <h1 id="viewport-title">FLEET <span>OVERVIEW</span></h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <div class="hud-clock" id="hud-clock-time">00:00:00</div>
+        </div>
+      </header>
+
+      <!-- ==================================================================== -->
+      <!-- ADMIN VIEW CONTAINER -->
+      <!-- ==================================================================== -->
+      <div id="admin-dashboard-view" class="hidden">
+
+        <!-- 1. FLEET OVERVIEW TAB -->
+        <div id="tab-overview" class="page-view active">
+          <!-- Active Emergency Alert Area -->
+          <div id="admin-emergency-alert-area" style="display:none; margin-bottom: 1.5rem;"></div>
+          <!-- KPI Cards -->
+          <div class="kpi-row-header">Operational Status Node</div>
+          <div class="kpi-grid">
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Total Vehicles <i class="fa-solid fa-car"></i></div>
+              <div class="kpi-card-val" id="ov-total-vehicles">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--success);">
+              <div class="kpi-card-header">Vehicles Running <i class="fa-solid fa-road"></i></div>
+              <div class="kpi-card-val" id="ov-vehicles-running">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--primary);">
+              <div class="kpi-card-header">Vehicles Charging <i class="fa-solid fa-charging-station"></i></div>
+              <div class="kpi-card-val" id="ov-vehicles-charging">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--warning);">
+              <div class="kpi-card-header">In Garage <i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <div class="kpi-card-val" id="ov-vehicles-garage">--</div>
+            </div>
+          </div>
+
+          <div class="kpi-row-header">Battery Diagnostics Node</div>
+          <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Average Battery % <i class="fa-solid fa-battery-half"></i></div>
+              <div class="kpi-card-val" id="ov-avg-battery">--<span>%</span></div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Average Battery Health <i class="fa-solid fa-heart-pulse"></i></div>
+              <div class="kpi-card-val" id="ov-avg-health">--<span>%</span></div>
+            </div>
+          </div>
+
+          <div class="kpi-row-header">Financial Balance Node</div>
+          <div class="kpi-grid">
+            <div class="kpi-card" style="--border-top-color: var(--success);">
+              <div class="kpi-card-header">Total Revenue <i class="fa-solid fa-wallet"></i></div>
+              <div class="kpi-card-val" id="ov-total-revenue" style="color:var(--success);">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--alert);">
+              <div class="kpi-card-header">Total Expenses <i class="fa-solid fa-receipt"></i></div>
+              <div class="kpi-card-val" id="ov-total-expenses" style="color:var(--alert);">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Total Profit <i class="fa-solid fa-vault"></i></div>
+              <div class="kpi-card-val" id="ov-total-profit">--</div>
+            </div>
+          </div>
+
+          <!-- Bottom divided grid: Telemetry Table + Small alerts list -->
+          <div class="overview-layout">
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title"><i class="fa-solid fa-satellite-dish"></i> Live Fleet Telemetry</div>
+              <div class="table-container">
+                <table id="ov-telemetry-table">
+                  <thead>
+                    <tr>
+                      <th>Vehicle ID</th>
+                      <th>Make & Model</th>
+                      <th>Body Type</th>
+                      <th>Seats</th>
+                      <th>Driver ID</th>
+                      <th>Battery %</th>
+                      <th>Battery Health</th>
+                      <th>Range</th>
+                      <th>Max Range</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="11" style="text-align:center;">Querying telemetry data...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title"><i class="fa-solid fa-circle-exclamation"></i> Live Alerts Monitor</div>
+              <div class="alerts-list" id="ov-alerts-summary-list">
+                <p style="color:var(--text-muted); font-size: 0.9rem;">Checking system safety nodes...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. VEHICLE DETAILS TAB -->
+        <div id="tab-vehicles" class="page-view">
+          <div class="control-row" style="margin-bottom: 1.5rem; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); padding: 10px 16px; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <span style="font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--orange);"><i class="fa-solid fa-search"></i> Select Vehicle:</span>
+            
+            <!-- Search Input -->
+            <input 
+              type="text" 
+              id="vehicle-search-input" 
+              placeholder="Type to search vehicle ID or model..." 
+              style="flex: 1; min-width: 250px; padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 0.95rem;"
+              oninput="filterVehicleDropdown()"
+            />
+            
+            <!-- Dropdown -->
+            <select class="form-select" id="admin-vehicle-select" onchange="loadAdminVehicleDetails(this.value)" style="flex: 1; min-width: 250px;">
+              <!-- Loaded dynamically -->
+            </select>
+          </div>
+
+          <div class="details-split">
+            <!-- Specifications -->
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-circle-info"></i> Vehicle Specifications</div>
+              
+              <!-- Vehicle Image -->
+              <div id="vehicle-image-container">
+                <img id="vehicle-image" src="" alt="Vehicle" style="display:none;">
+                <div id="vehicle-image-placeholder">No image available</div>
+              </div>
+              
+              <div class="specs-grid">
+                <div class="spec-block">
+                  <div class="spec-label">Vehicle ID</div>
+                  <div class="spec-value" id="ad-v-id">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Brand & Model</div>
+                  <div class="spec-value" id="ad-v-brand-model">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Body Type</div>
+                  <div class="spec-value" id="ad-v-body-type">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Total Seats</div>
+                  <div class="spec-value" id="ad-v-total-seats">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Assigned Driver</div>
+                  <div class="spec-value" id="ad-v-driver">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Current Status</div>
+                  <div class="spec-value" id="ad-v-status">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Battery Capacity</div>
+                  <div class="spec-value" id="ad-v-capacity">-- kWh</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Vehicle Weight</div>
+                  <div class="spec-value" id="ad-v-weight">-- kg</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Max Range</div>
+                  <div class="spec-value" id="ad-v-max-range" style="color:var(--success);">-- km</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Max Range @ 100% Health</div>
+                  <div class="spec-value" id="ad-v-max-range-100" style="color:var(--orange); font-weight:700;">-- km</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Telemetry & Totals -->
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-chart-line"></i> Telemetry & Totals</div>
+              <div class="specs-grid">
+                <div class="spec-block">
+                  <div class="spec-label">Current Battery</div>
+                  <div class="spec-value" id="ad-v-battery" style="color:var(--orange);">--%</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Current Health</div>
+                  <div class="spec-value" id="ad-v-health">--%</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Estimated Range</div>
+                  <div class="spec-value" id="ad-v-range" style="color:var(--success);">-- km</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Total Distance</div>
+                  <div class="spec-value" id="ad-v-distance">-- km</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Total Trips</div>
+                  <div class="spec-value" id="ad-v-total-trips" style="color:var(--orange);">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Vehicle Charged Count</div>
+                  <div class="spec-value" id="ad-v-charged-count" style="color:var(--warning);">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Total Charging Cost</div>
+                  <div class="spec-value" id="ad-v-total-charging-cost" style="color:var(--alert);">--</div>
+                </div>
+                <div class="spec-block">
+                  <div class="spec-label">Avg Charging Cost</div>
+                  <div class="spec-value" id="ad-v-avg-charging-cost" style="color:var(--alert);">--</div>
+                </div>
+                <div class="spec-block" style="grid-column: span 2;">
+                  <div class="spec-label">Total Passengers Transported</div>
+                  <div class="spec-value" id="ad-v-passengers">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly details and charts -->
+          <div class="card">
+            <div class="card-title"><i class="fa-solid fa-chart-column"></i> Monthly Metrics Logs</div>
+            <div class="details-split" style="align-items: center;">
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Month</th>
+                      <th>Revenue</th>
+                      <th>Expense</th>
+                      <th>Profit</th>
+                      <th>Charges</th>
+                      <th>Overspeeds</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ad-v-monthly-tbody">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+              </div>
+              <div style="height: 240px; position: relative;">
+                <canvas id="admin-vehicle-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily trend chart -->
+          <div class="card" style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+              <div class="card-title" style="margin: 0; border: none; padding: 0;"><i class="fa-solid fa-chart-line"></i> Daily Trends</div>
+              <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">Month:</span>
+                  <select id="ad-v-daily-month-select" onchange="updateVehicleDailyChart()" style="padding: 6px 12px; font-weight: 600; font-family: inherit; font-size: 0.85rem; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text); outline: none; border-radius: 4px;">
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June" selected>June</option>
+                  </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">View Metric:</span>
+                  <select id="ad-v-daily-metric-select" onchange="updateVehicleDailyChart()" style="padding: 6px 12px; font-weight: 600; font-family: inherit; font-size: 0.85rem; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text); outline: none; border-radius: 4px;">
+                    <option value="all" selected>All Metrics</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="expense">Expense</option>
+                    <option value="profit">Profit</option>
+                    <option value="charges">Charges</option>
+                    <option value="overspeeds">Overspeeds</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style="height: 350px; position: relative; width: 100%;">
+              <canvas id="admin-vehicle-daily-chart"></canvas>
+              <div id="daily-chart-no-data" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; flex-direction:column; gap:8px; pointer-events:none;">
+                <i class="fa-solid fa-chart-simple" style="font-size:2.5rem; color:var(--border-color);"></i>
+                <p style="font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:2px; color:var(--text-muted);">No data available for this period</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. BRAND ANALYTICS TAB -->
+        <div id="tab-brands" class="page-view">
+          <div class="brands-selector-grid">
+            <div class="brand-selector-card active" id="brand-card-All" onclick="selectAdminBrand('All')">
+              <i class="fa-solid fa-layer-group"></i>
+              <h3>ALL BRANDS</h3>
+            </div>
+            <div class="brand-selector-card" id="brand-card-Tata" onclick="selectAdminBrand('Tata')">
+              <i class="fa-solid fa-industry"></i>
+              <h3>TATA</h3>
+            </div>
+            <div class="brand-selector-card" id="brand-card-Mahindra" onclick="selectAdminBrand('Mahindra')">
+              <i class="fa-solid fa-industry"></i>
+              <h3>MAHINDRA</h3>
+            </div>
+            <div class="brand-selector-card" id="brand-card-Hyundai" onclick="selectAdminBrand('Hyundai')">
+              <i class="fa-solid fa-industry"></i>
+              <h3>HYUNDAI</h3>
+            </div>
+            <div class="brand-selector-card" id="brand-card-Suzuki" onclick="selectAdminBrand('Suzuki')">
+              <i class="fa-solid fa-industry"></i>
+              <h3>SUZUKI</h3>
+            </div>
+          </div>
+
+          <!-- ALL BRANDS COMPARISON VIEW -->
+          <div id="brand-view-all" class="brand-view" style="display:block;">
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-layer-group"></i> All Brands Comparison</div>
+              
+              <!-- Best Performers -->
+              <div class="kpi-grid">
+                <div class="kpi-card" style="--border-top-color: var(--success);">
+                  <div class="kpi-card-header">Best Profit <i class="fa-solid fa-trophy"></i></div>
+                  <div class="kpi-card-val" id="best-profit-brand" style="color:var(--success); font-size:1.8rem;">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--success);">
+                  <div class="kpi-card-header">Most Efficient <i class="fa-solid fa-leaf"></i></div>
+                  <div class="kpi-card-val" id="most-efficient-brand" style="color:var(--success); font-size:1.8rem;">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--orange);">
+                  <div class="kpi-card-header">Best Margin <i class="fa-solid fa-percent"></i></div>
+                  <div class="kpi-card-val" id="best-margin-brand" style="font-size:1.8rem;">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--orange);">
+                  <div class="kpi-card-header">Total Brands <i class="fa-solid fa-building"></i></div>
+                  <div class="kpi-card-val" id="total-brands">--</div>
+                </div>
+              </div>
+              
+              <!-- Comparison Table -->
+              <div class="table-container" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Brand</th>
+                      <th>Vehicles</th>
+                      <th>Revenue (₹)</th>
+                      <th>Expense (₹)</th>
+                      <th>Profit (₹)</th>
+                      <th>Margin (%)</th>
+                      <th>Avg Efficiency (km/kWh)</th>
+                      <th>Avg Health (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="brand-comparison-tbody">
+                    <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- Comparison Charts -->
+              <div class="details-split">
+                <div style="height: 280px; position: relative;">
+                  <canvas id="brand-comparison-revenue-chart"></canvas>
+                </div>
+                <div style="height: 280px; position: relative;">
+                  <canvas id="brand-comparison-efficiency-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INDIVIDUAL BRAND VIEW -->
+          <div id="brand-view-single" class="brand-view" style="display:none;">
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-industry"></i> Brand Statistics summary</div>
+              
+              <div class="kpi-grid">
+                <div class="kpi-card" style="--border-top-color: var(--success);">
+                  <div class="kpi-card-header">Brand Revenue <i class="fa-solid fa-wallet"></i></div>
+                  <div class="kpi-card-val" id="br-revenue" style="color:var(--success);">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--alert);">
+                  <div class="kpi-card-header">Brand Expense <i class="fa-solid fa-receipt"></i></div>
+                  <div class="kpi-card-val" id="br-expense" style="color:var(--alert);">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--orange);">
+                  <div class="kpi-card-header">Brand Net Profit <i class="fa-solid fa-vault"></i></div>
+                  <div class="kpi-card-val" id="br-profit">--</div>
+                </div>
+              </div>
+
+              <div class="kpi-grid">
+                <div class="kpi-card" style="--border-top-color: var(--orange);">
+                  <div class="kpi-card-header">Avg Battery Health <i class="fa-solid fa-heart-pulse"></i></div>
+                  <div class="kpi-card-val" id="br-health">--<span>%</span></div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--orange);">
+                  <div class="kpi-card-header">Avg Range <i class="fa-solid fa-road"></i></div>
+                  <div class="kpi-card-val" id="br-range">--<span>km</span></div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--warning);">
+                  <div class="kpi-card-header">Charging Events <i class="fa-solid fa-plug"></i></div>
+                  <div class="kpi-card-val" id="br-charging">--</div>
+                </div>
+                <div class="kpi-card" style="--border-top-color: var(--alert);">
+                  <div class="kpi-card-header">Overspeed Events <i class="fa-solid fa-gauge"></i></div>
+                  <div class="kpi-card-val" id="br-overspeed" style="color:var(--alert);">--</div>
+                </div>
+              </div>
+
+              <div class="details-split" style="margin-top: 2rem; align-items: center;">
+                <div class="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Month</th>
+                        <th>Revenue</th>
+                        <th>Expense</th>
+                        <th>Net Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody id="br-monthly-tbody">
+                      <!-- Dynamic -->
+                    </tbody>
+                  </table>
+                </div>
+                <div style="height: 240px; position: relative;">
+                  <canvas id="admin-brand-chart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Brand Vehicles List -->
+            <div class="card" style="margin-top: 1.5rem;">
+              <div class="card-title"><i class="fa-solid fa-car-side"></i> <span id="brand-name-vehicles">Brand</span> Vehicles</div>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Vehicle ID</th>
+                      <th>Model</th>
+                      <th>Body Type</th>
+                      <th>Driver</th>
+                      <th>Status</th>
+                      <th>Battery %</th>
+                      <th>Health %</th>
+                      <th>Range (km)</th>
+                      <th>Distance (km)</th>
+                      <th>Revenue (₹)</th>
+                      <th>Efficiency (km/kWh)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="brand-vehicles-tbody">
+                    <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Select a brand to view vehicles</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. DRIVER ANALYTICS TAB -->
+        <div id="tab-drivers" class="page-view">
+          
+          <!-- Overspeed Comparison Section -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-title">
+              <i class="fa-solid fa-gauge-high"></i> Driver Overspeed Comparison
+              
+              <!-- Filter Dropdown -->
+              <select id="overspeed-filter" onchange="fetchDriversOverspeedComparison()" style="margin-left: auto; padding: 6px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; cursor: pointer;">
+                <option value="all">All Drivers</option>
+                <option value="max">Top 5 Violators (Max)</option>
+                <option value="min">Top 5 Best (Min)</option>
+              </select>
+            </div>
+            
+            <!-- Fleet Stats Cards -->
+            <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+              <div class="kpi-card" style="--border-top-color: var(--success);">
+                <div class="kpi-card-header">Best Performer <i class="fa-solid fa-trophy"></i></div>
+                <div class="kpi-card-val" id="os-min-val" style="color:var(--success); font-size:1.8rem;">--</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;" id="os-min-label">--</div>
+              </div>
+              <div class="kpi-card" style="--border-top-color: var(--warning);">
+                <div class="kpi-card-header">Fleet Average <i class="fa-solid fa-chart-line"></i></div>
+                <div class="kpi-card-val" id="os-avg-val">--</div>
+              </div>
+              <div class="kpi-card" style="--border-top-color: var(--alert);">
+                <div class="kpi-card-header">Needs Attention <i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="kpi-card-val" id="os-max-val" style="color:var(--alert); font-size:1.8rem;">--</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;" id="os-max-label">--</div>
+              </div>
+              <div class="kpi-card" style="--border-top-color: var(--orange);">
+                <div class="kpi-card-header">Total Drivers <i class="fa-solid fa-users"></i></div>
+                <div class="kpi-card-val" id="os-total-drivers">--</div>
+              </div>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div class="table-container" style="margin-bottom: 1.5rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Driver ID</th>
+                    <th>Driver Name</th>
+                    <th>Total Overspeeds</th>
+                    <th>Max Speed (km/h)</th>
+                    <th>Avg Speed (km/h)</th>
+                    <th>Eco Score</th>
+                    <th>Distance (km)</th>
+                    <th>Total Trips</th>
+                  </tr>
+                </thead>
+                <tbody id="overspeed-comparison-tbody">
+                  <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Trend Chart -->
+            <div>
+              <div class="card-title" style="margin-top: 0; margin-bottom: 15px; border: none; padding: 0;">
+                <i class="fa-solid fa-chart-line"></i> Overspeed Trends (Last 3 Months)
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="overspeed-trends-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Individual Driver Profile -->
+          <div class="card-title" style="margin-bottom: 1rem; padding-left: 0;">
+            <i class="fa-solid fa-user-gear"></i> Individual Driver Profile
+          </div>
+          
+          <div class="driver-profile-split">
+            <!-- Sidebar list -->
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title"><i class="fa-solid fa-users"></i> Drivers Directory</div>
+              <div class="driver-list-panel" id="admin-drivers-list">
+                <p style="color:var(--text-muted);">Loading driver node...</p>
+              </div>
+            </div>
+
+            <!-- Detail panel -->
+            <div class="card" style="margin-bottom: 0;">
+              <div class="card-title"><i class="fa-solid fa-user-gear"></i> Driver Profile Dashboard</div>
+              
+              <div class="details-split">
+                <div class="specs-grid">
+                  <div class="spec-block">
+                    <div class="spec-label">Driver ID</div>
+                    <div class="spec-value" id="ad-d-id">--</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Assigned Vehicle</div>
+                    <div class="spec-value" id="ad-d-vehicle">--</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Total Trips</div>
+                    <div class="spec-value" id="ad-d-trips">--</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Total Distance</div>
+                    <div class="spec-value" id="ad-d-distance">-- km</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Overspeed Events</div>
+                    <div class="spec-value" id="ad-d-overspeed" style="color:var(--alert);">--</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Average Speed</div>
+                    <div class="spec-value" id="ad-d-speed">-- km/h</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Total Revenue Generated</div>
+                    <div class="spec-value" id="ad-d-revenue" style="color:var(--success);">--</div>
+                  </div>
+                  <div class="spec-block">
+                    <div class="spec-label">Charging Logs</div>
+                    <div class="spec-value" id="ad-d-charging">--</div>
+                  </div>
+                </div>
+
+                <!-- Eco rating -->
+                <div class="eco-dial-card">
+                  <div class="kpi-row-header" style="margin-bottom: 1rem; width:100%; justify-content:center;">Driver Safety Score</div>
+                  <div class="eco-dial-gauge">
+                    <svg>
+                      <circle class="eco-dial-bg" cx="65" cy="65" r="55"></circle>
+                      <circle class="eco-dial-fill" id="ad-d-eco-circle" cx="65" cy="65" r="55"></circle>
+                    </svg>
+                    <div class="eco-dial-text" id="ad-d-eco-value">--<span>Score</span></div>
+                  </div>
+                  <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding: 0 10px;">Eco rating diminishes by 2 points for every overspeed warning recorded.</p>
+                </div>
+              </div>
+
+              <!-- Overspeed Events Trend Chart -->
+              <div style="margin-top: 1.8rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <div class="card-title" style="margin-top: 0; margin-bottom: 15px; border: none; padding: 0;">
+                  <i class="fa-solid fa-gauge-high"></i> Overspeed Events (Past 3 Months)
+                </div>
+                <div style="height: 220px; position: relative;">
+                  <canvas id="admin-driver-overspeeds-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. DRIVER MANAGEMENT TAB -->
+        <div id="tab-driver-management" class="page-view">
+          
+          <!-- Add Driver Section -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-title"><i class="fa-solid fa-user-plus"></i> Add New Driver</div>
+            <form id="add-driver-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Driver ID <span style="color: var(--alert);">*</span></label>
+                <input type="text" id="new-driver-id" placeholder="Auto-generated (D021, D022...)" readonly style="width: 100%; padding: 10px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--orange); font-family: 'Rajdhani'; font-weight: 700; cursor: not-allowed;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Driver Name <span style="color: var(--alert);">*</span></label>
+                <input type="text" id="new-driver-name" placeholder="e.g., Rajesh Kumar" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">License Number <span style="color: var(--alert);">*</span></label>
+                <input type="text" id="new-driver-license" placeholder="e.g., DL-2020110012345" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Email</label>
+                <input type="email" id="new-driver-email" placeholder="e.g., driver@fleet.com" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Phone</label>
+                <input type="tel" id="new-driver-phone" placeholder="e.g., +91 98765 43210" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Assigned Vehicle ID</label>
+                <input type="text" id="new-driver-vehicle" placeholder="e.g., E001" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Base Salary (₹/km) <span style="color: var(--alert);">*</span></label>
+                <input type="number" id="new-driver-salary" placeholder="2.30" step="0.1" value="2.30" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div style="display: flex; align-items: flex-end;">
+                <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--success), #27ae60); color: var(--white); border: none; border-radius: 6px; font-family: 'Rajdhani'; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;">
+                  <i class="fa-solid fa-plus"></i> ADD DRIVER
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Assign Trip Section -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-title"><i class="fa-solid fa-route"></i> Assign Trip & Calculate Salary</div>
+            <form id="assign-trip-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Driver ID</label>
+                <select id="trip-driver-id" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani'; cursor: pointer;">
+                  <option value="">Select Driver</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Vehicle ID</label>
+                <input type="text" id="trip-vehicle-id" placeholder="E001" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Trip Date</label>
+                <input type="date" id="trip-date" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Destination Distance (km)</label>
+                <input type="number" id="trip-distance" placeholder="150" step="0.1" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div style="display: flex; align-items: flex-end;">
+                <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--orange), #e67e22); color: var(--white); border: none; border-radius: 6px; font-family: 'Rajdhani'; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;">
+                  <i class="fa-solid fa-calculator"></i> ASSIGN & CALCULATE
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Drivers List Section -->
+          <div class="card">
+            <div class="card-title"><i class="fa-solid fa-users"></i> All Drivers</div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Driver ID</th>
+                    <th>Name</th>
+                    <th>License Number</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Assigned Vehicle</th>
+                    <th>Salary Rate (₹/km)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="drivers-mgmt-tbody">
+                  <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading drivers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Driver Modal -->
+        <div id="update-driver-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
+          <div style="background: var(--card-bg); border-radius: 12px; padding: 2rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+              <h3 style="margin: 0; font-family: 'Bebas Neue'; font-size: 1.8rem; color: var(--primary);"><i class="fa-solid fa-user-pen"></i> UPDATE DRIVER</h3>
+              <button onclick="closeUpdateModal()" style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="update-driver-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <input type="hidden" id="update-driver-id">
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Driver Name <span style="color: var(--alert);">*</span></label>
+                <input type="text" id="update-driver-name" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">License Number <span style="color: var(--alert);">*</span></label>
+                <input type="text" id="update-driver-license" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Email</label>
+                <input type="email" id="update-driver-email" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Phone</label>
+                <input type="tel" id="update-driver-phone" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Assigned Vehicle ID</label>
+                <input type="text" id="update-driver-vehicle" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Base Salary (₹/km) <span style="color: var(--alert);">*</span></label>
+                <input type="number" id="update-driver-salary" step="0.5" required style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--white); font-family: 'Rajdhani';">
+              </div>
+              <div style="grid-column: 1 / -1; display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" onclick="closeUpdateModal()" style="padding: 12px 24px; background: var(--border-color); color: var(--text); border: none; border-radius: 6px; font-family: 'Rajdhani'; font-weight: 700; cursor: pointer;">
+                  CANCEL
+                </button>
+                <button type="submit" style="padding: 12px 24px; background: linear-gradient(135deg, var(--primary), #3498db); color: var(--white); border: none; border-radius: 6px; font-family: 'Rajdhani'; font-weight: 700; cursor: pointer;">
+                  <i class="fa-solid fa-save"></i> UPDATE DRIVER
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 6. CHARGING ANALYTICS TAB -->
+        <div id="tab-charging" class="page-view">
+          <div class="kpi-grid">
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Total Charging Events <i class="fa-solid fa-plug"></i></div>
+              <div class="kpi-card-val" id="ch-events">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--alert);">
+              <div class="kpi-card-header">Total Charging Cost <i class="fa-solid fa-receipt"></i></div>
+              <div class="kpi-card-val" id="ch-cost" style="color:var(--alert);">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Average Charging Cost <i class="fa-solid fa-calculator"></i></div>
+              <div class="kpi-card-val" id="ch-avg-cost">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--success);">
+              <div class="kpi-card-header">Most Charged Vehicle <i class="fa-solid fa-car-battery"></i></div>
+              <div class="kpi-card-val" id="ch-most-charged" style="font-size: 1.8rem; padding-top: 6px;">--</div>
+            </div>
+          </div>
+
+          <div class="details-split">
+            <!-- Top vehicles cost -->
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-ranking-star"></i> Top 5 Vehicles by Charging Cost</div>
+              <div style="height: 250px; position: relative;">
+                <canvas id="admin-top-charging-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Cost Trend -->
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-chart-line"></i> Monthly Charging cost Trend</div>
+              <div style="height: 250px; position: relative;">
+                <canvas id="admin-charging-trend-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. ALERTS CENTER TAB -->
+        <div id="tab-alerts" class="page-view">
+          
+          <!-- Emergency Broadcast Dock (Driver Emergency Trigger) -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; background:rgba(255, 51, 102, 0.08); border:1px solid rgba(255, 51, 102, 0.2); border-radius:12px; padding:1.2rem;">
+            <div>
+              <h3 style="color:#ff3366; margin:0 0 4px 0; font-family:'Bebas Neue'; font-size:1.6rem; letter-spacing:1px;"><i class="fa-solid fa-triangle-exclamation"></i> EMERGENCY BROADCAST DOCK</h3>
+              <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">In case of critical vehicle failure or accident, trigger immediate emergency notification to the administrator.</p>
+            </div>
+            <button class="btn" id="driver-emergency-btn" onclick="triggerEmergencyAlert()" style="background:linear-gradient(135deg, #ff3366, #ff0055); color:#fff; border:none; padding:12px 24px; font-weight:700; font-family:'Rajdhani'; letter-spacing:1px; cursor:pointer; border-radius:8px; box-shadow:0 4px 15px rgba(255,51,102,0.4); transition:all 0.3s ease;">
+              <i class="fa-solid fa-bell"></i> TRIGGER EMERGENCY
+            </button>
+          </div>
+          
+          <!-- Active Emergency Alert Area in Alerts Center -->
+          <div id="admin-alerts-tab-emergency-area" style="display:none; margin-bottom: 1.5rem; width:100%;"></div>
+          <div class="details-split">
+            <!-- Critical Battery -->
+            <div class="card">
+              <div class="card-title" style="color:var(--alert);"><i class="fa-solid fa-battery-empty"></i> Critical Battery Alert (&lt; 20%)</div>
+              <div class="alerts-list" id="al-list-battery">
+                <!-- Dynamic -->
+              </div>
+            </div>
+
+            <!-- Degraded Health -->
+            <div class="card">
+              <div class="card-title" style="color:var(--warning);"><i class="fa-solid fa-heart-crack"></i> Degraded Health Warn (&lt; 70%)</div>
+              <div class="alerts-list" id="al-list-health">
+                <!-- Dynamic -->
+              </div>
+            </div>
+          </div>
+
+          <div class="details-split" style="margin-top: 1.5rem;">
+            <!-- Garage Status -->
+            <div class="card">
+              <div class="card-title"><i class="fa-solid fa-screwdriver-wrench"></i> Vehicles in Garage Node</div>
+              <div class="alerts-list" id="al-list-garage">
+                <!-- Dynamic -->
+              </div>
+            </div>
+
+            <!-- Overspeeding Alerts -->
+            <div class="card">
+              <div class="card-title" style="color:var(--alert);"><i class="fa-solid fa-gauge-high"></i> Overspeed Incidents logged</div>
+              <div class="alerts-list" id="al-list-overspeed">
+                <!-- Dynamic -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================================================================== -->
+      <!-- DRIVER VIEW CONTAINER -->
+      <!-- ==================================================================== -->
+      <div id="driver-dashboard-view" class="hidden">
+        
+        <!-- Driver Header Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding:1rem; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; backdrop-filter:blur(8px);">
+          <div style="flex:1;">
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Driver Profile</div>
+            <div style="font-size:1.3rem; font-weight:700; color:var(--white); font-family:'Bebas Neue';" id="driver-user-name">--</div>
+            <div style="display:flex; gap:2rem; margin-top:6px; font-size:0.85rem;">
+              <div>
+                <span style="color:var(--text-muted);">ID:</span> 
+                <span style="color:var(--orange); font-weight:700;" id="driver-user-id">--</span>
+              </div>
+              <div>
+                <span style="color:var(--text-muted);">License:</span> 
+                <span style="color:var(--primary); font-weight:700; font-family:monospace;" id="driver-user-license">--</span>
+              </div>
+              <div>
+                <span style="color:var(--text-muted);">Email:</span> 
+                <span style="color:var(--white); font-weight:600;" id="driver-user-email">--</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+            <div style="text-align:right;">
+              <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Total Salary Earned</div>
+              <div style="font-size:1.6rem; font-weight:700; color:var(--success); font-family:'Bebas Neue';" id="driver-total-salary">₹0.00</div>
+            </div>
+            <button onclick="logout()" style="background:transparent; color:var(--alert); border:1px solid var(--alert); padding:8px 16px; cursor:pointer; font-family:'Rajdhani'; font-weight:700; font-size:0.85rem; letter-spacing:1px; transition:all 0.2s; border-radius:6px; text-transform:uppercase;">
+              <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Navigation Menu -->
+        <div id="driver-quick-nav" style="position:sticky; top:0; z-index:100; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.8rem 1.2rem; margin:1rem 0; display:flex; gap:0.8rem; flex-wrap:wrap; box-shadow:0 4px 12px rgba(0,0,0,0.3); backdrop-filter:blur(8px);">
+          <a href="#vehicle-section" class="quick-nav-btn">
+            <i class="fa-solid fa-car"></i> Vehicle
+          </a>
+          <a href="#prediction-section" class="quick-nav-btn">
+            <i class="fa-solid fa-brain"></i> Predict Range
+          </a>
+          <a href="#maintenance-section" class="quick-nav-btn">
+            <i class="fa-solid fa-screwdriver-wrench"></i> Maintenance
+          </a>
+          <a href="#salary-section" class="quick-nav-btn">
+            <i class="fa-solid fa-wallet"></i> Salary
+          </a>
+        </div>
+
+        <div id="vehicle-section" class="driver-profile-split" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; scroll-margin-top: 80px;">
+          
+          <!-- Column 1: Show the latest record for the assigned vehicle -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div class="card-title"><i class="fa-solid fa-car"></i> Assigned Vehicle Details</div>
+              
+              <!-- Driver Vehicle Image -->
+              <div id="driver-vehicle-image-container">
+                <img id="driver-vehicle-image" src="" alt="Vehicle" style="display:none;">
+                <div id="driver-vehicle-image-placeholder">No image available</div>
+              </div>
+              
+              <div class="spec-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Vehicle ID</span>
+                  <span id="drv-v-id" style="font-weight:700; color:var(--primary);">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Brand & Model</span>
+                  <span id="drv-v-brand-model" style="font-weight:600;">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Battery Capacity</span>
+                  <span id="drv-v-capacity" style="font-weight:600;">-- kWh</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Current Battery %</span>
+                  <span id="drv-v-battery" style="font-weight:600; color:var(--success);">--%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Battery Health %</span>
+                  <span id="drv-v-health" style="font-weight:600; color:var(--orange);">--%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Current Range</span>
+                  <span id="drv-v-range" style="font-weight:600;">-- km</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Odometer</span>
+                  <span id="drv-v-odometer" style="font-weight:700; color:var(--orange);">-- km</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Charge Cycles</span>
+                  <span id="drv-v-charge-count" style="font-weight:600; color:var(--orange);">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Current Status</span>
+                  <span id="drv-v-status" style="font-weight:700;">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Today's Driving Summary -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div class="card-title"><i class="fa-solid fa-chart-line"></i> Today's Driving Summary</div>
+              <div class="spec-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Today's Distance Travelled</span>
+                  <span id="drv-summary-distance" style="font-weight:700; color:var(--primary); font-size:1.1rem;">-- km</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Today's Trips</span>
+                  <span id="drv-summary-trips" style="font-weight:600;">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Passengers Transported</span>
+                  <span id="drv-summary-passengers" style="font-weight:600;">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">City/Highway Drive</span>
+                  <span id="drv-summary-drive-type" style="font-weight:600; color:var(--orange);">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Revenue Generated Today</span>
+                  <span id="drv-summary-revenue" style="font-weight:700; color:var(--success); font-size:1.1rem;">₹ --</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 3: Driving Behaviour -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div class="card-title"><i class="fa-solid fa-shield-halved"></i> Driving Behaviour</div>
+              <div class="spec-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Overspeed Count</span>
+                  <span id="drv-behavior-overspeed" style="font-weight:600; color:var(--alert);">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Average Speed</span>
+                  <span id="drv-behavior-avg-speed" style="font-weight:600;">-- km/h</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+                  <span style="color:var(--text-muted);">Maximum Speed</span>
+                  <span id="drv-behavior-max-speed" style="font-weight:600;">-- km/h</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding-bottom:6px; align-items:center;">
+                  <span style="color:var(--text-muted);">Eco Score</span>
+                  <div style="text-align:right;">
+                    <span id="drv-behavior-ecoscore" style="font-weight:700; color:var(--success); font-size:1.2rem;">--</span>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">100 - (overspeed_count * 2)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Row 2: Range Prediction ML model container -->
+        <div id="prediction-section" class="card" style="margin-top:1.5rem; scroll-margin-top: 80px;">
+          <div class="card-title"><i class="fa-solid fa-brain"></i> Range Prediction ML Model</div>
+          <p style="margin:6px 0 1.2rem 0; font-size:0.85rem; color:var(--text-muted);">Calculate real-time remaining vehicle range using the trained Random Forest regressor based on custom parameters.</p>
+          
+          <form id="driver-predict-form" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.2rem;">
+            <!-- Row 1: Basic Parameters -->
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Battery Percentage (%)</label>
+              <input type="number" id="drv-p-batt" min="0" max="100" step="1" required oninput="if(this.value<0)this.value=0;if(this.value>100)this.value=100;" style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Battery Health (%)</label>
+              <input type="number" id="drv-p-health" min="0" max="100" step="1" required oninput="if(this.value<0)this.value=0;if(this.value>100)this.value=100;" style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Speed (km/h)</label>
+              <input type="number" id="drv-p-speed" min="0" max="200" step="1" required oninput="if(this.value<0)this.value=0;if(this.value>200)this.value=200;" style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Odometer (km)</label>
+              <input type="number" id="drv-p-odometer" min="0" step="0.1" required oninput="if(this.value<0)this.value=0;" style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Charge Count</label>
+              <input type="number" id="drv-p-charge-count" min="0" step="1" required oninput="if(this.value<0)this.value=0;" style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'" title="Edit to test different charge cycles">
+            </div>
+            
+            <!-- Row 2: Selection Parameters -->
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Drive Type</label>
+              <select id="drv-p-location" required style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s; cursor:pointer;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+                <option value="City">City Driving</option>
+                <option value="Highway">Highway Driving</option>
+                <option value="Stationary">Stationary/Idle</option>
+              </select>
+            </div>
+            
+            <div class="predict-field">
+              <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--orange); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Vehicle Model</label>
+              <select id="drv-p-model" required style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); border-radius:8px; color:var(--white); font-family:'Rajdhani'; font-weight:600; font-size:1rem; transition:all 0.2s; cursor:pointer;" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border-color)'">
+                <option value="mahindra_be6">Mahindra BE 6</option>
+                <option value="tata_nexon">Tata Nexon EV</option>
+                <option value="tata_tiago">Tata Tiago EV</option>
+                <option value="tata_xpres">Tata Xpres T EV</option>
+                <option value="hyundai_creta">Hyundai Creta EV</option>
+                <option value="suzuki_vitara">Suzuki e-Vitara</option>
+              </select>
+            </div>
+            
+            <!-- Action Row -->
+            <div style="grid-column: 1 / -1; display:flex; gap:1rem; align-items:stretch; justify-content:space-between; margin-top:0.5rem; flex-wrap:wrap;">
+              <button type="submit" id="drv-p-submit-btn" style="flex:0 0 200px; background:linear-gradient(135deg, var(--orange), #ff7a2e); color:#fff; border:none; padding:14px 24px; font-weight:700; font-family:'Bebas Neue'; letter-spacing:2px; cursor:pointer; border-radius:8px; font-size:1.1rem; transition:all 0.3s ease; box-shadow:0 4px 15px rgba(255,90,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255,90,0,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(255,90,0,0.3)'">
+                <i class="fa-solid fa-calculator"></i> Predict
+              </button>
+              
+              <!-- Speedometer Gauge -->
+              <div style="flex:1; min-width:300px; padding:1.2rem; background:linear-gradient(135deg, rgba(255,90,0,0.08), rgba(255,90,0,0.02)); border:2px solid rgba(255,90,0,0.3); border-radius:12px; text-align:center; box-shadow:0 0 20px rgba(255,90,0,0.1); position:relative;">
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px;">Estimated Range</div>
+                
+                <!-- Gauge Canvas -->
+                <canvas id="range-gauge-canvas" width="250" height="150" style="max-width:100%; height:auto; margin:0 auto; display:block;"></canvas>
+                
+                <!-- Value Display -->
+                <div id="drv-p-output-val" style="font-size:2.5rem; font-weight:700; color:var(--orange); font-family:'Bebas Neue'; text-shadow:0 0 10px rgba(255,90,0,0.3); letter-spacing:1px; margin-top:-10px;">
+                  0.0 <span style="font-size:1.2rem; font-family:'Rajdhani'; font-weight:600;">km</span>
+                </div>
+                
+                <!-- Max Range Display -->
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">
+                  Max Range: <span id="vehicle-max-range-display" style="color:var(--orange); font-weight:700;">--</span> km
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Maintenance Recommendations section -->
+        <div id="maintenance-section" class="card" style="margin-top:1.5rem; scroll-margin-top: 80px;">
+          <div class="card-title"><i class="fa-solid fa-screwdriver-wrench"></i> Systems Status & Maintenance Alerts</div>
+          <div id="drv-maintenance-alerts-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:10px;">
+            <!-- Dynamic alerts -->
+          </div>
+        </div>
+
+        <!-- Driver Salary & Earnings Section -->
+        <div id="salary-section" class="card" style="margin-top:1.5rem; scroll-margin-top: 80px;">
+          <div class="card-title"><i class="fa-solid fa-money-bill-trend-up"></i> My Earnings & Salary</div>
+          
+          <div class="kpi-grid" style="margin-top:1rem; margin-bottom:1.5rem;">
+            <div class="kpi-card" style="--border-top-color: var(--success);">
+              <div class="kpi-card-header">Total Trips Completed <i class="fa-solid fa-route"></i></div>
+              <div class="kpi-card-val" id="drv-salary-trips" style="color:var(--success);">--</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--primary);">
+              <div class="kpi-card-header">Total Distance Driven <i class="fa-solid fa-road"></i></div>
+              <div class="kpi-card-val" id="drv-salary-distance">-- km</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--orange);">
+              <div class="kpi-card-header">Average Trip Distance <i class="fa-solid fa-chart-line"></i></div>
+              <div class="kpi-card-val" id="drv-salary-avg-distance">-- km</div>
+            </div>
+            <div class="kpi-card" style="--border-top-color: var(--success);">
+              <div class="kpi-card-header">Total Salary Earned <i class="fa-solid fa-indian-rupee-sign"></i></div>
+              <div class="kpi-card-val" id="drv-salary-total" style="color:var(--success); font-size:2rem;">--</div>
+            </div>
+          </div>
+
+          <!-- Recent Trips Table -->
+          <div class="card-title" style="margin-top:1.5rem; margin-bottom:1rem; border:none; padding:0;">
+            <i class="fa-solid fa-history"></i> Recent Trip History
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trip Date</th>
+                  <th>Vehicle ID</th>
+                  <th>Distance (km)</th>
+                  <th>Salary Earned</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="drv-recent-trips-tbody">
+                <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading trip data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    const BACKEND_URL = 'http://localhost:5000';
+    
+    // Theme setup
+    let currentTheme = localStorage.getItem('theme');
+    if (!localStorage.getItem('theme_preference_set')) {
+      currentTheme = 'light';
+      localStorage.setItem('theme', 'light');
+    } else {
+      currentTheme = currentTheme || 'light';
+    }
+    document.documentElement.setAttribute('data-theme', currentTheme);
+
+    function updateThemeUI() {
+      const btn = document.getElementById('theme-toggle-btn');
+      if (!btn) return;
+      if (currentTheme === 'light') {
+        btn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        btn.title = 'Switch to Dark Theme';
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        btn.title = 'Switch to Light Theme';
+      }
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      localStorage.setItem('theme', currentTheme);
+      localStorage.setItem('theme_preference_set', 'true');
+      updateThemeUI();
+      updateChartsTheme();
+    }
+
+    function getChartThemeOptions(hideLegend = false) {
+      const isLight = currentTheme === 'light';
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: hideLegend ? { display: false } : { labels: { color: isLight ? '#1a1a1a' : '#e7decd', font: { family: 'Rajdhani', weight: '600' } } }
+        },
+        scales: {
+          x: { 
+            grid: { color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)' }, 
+            ticks: { color: isLight ? '#555' : '#888', font: { family: 'Rajdhani', weight: '600' } } 
+          },
+          y: { 
+            grid: { color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)' }, 
+            ticks: { color: isLight ? '#555' : '#888', font: { family: 'Rajdhani', weight: '600' } } 
+          }
+        }
+      };
+    }
+
+    function updateChartsTheme() {
+      const isLight = currentTheme === 'light';
+      const textColor = isLight ? '#1a1a1a' : '#e7decd';
+      const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)';
+      const tickColor = isLight ? '#555' : '#888';
+
+      const updateChartOptions = (chart) => {
+        if (!chart) return;
+        if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+          chart.options.plugins.legend.labels.color = textColor;
+        }
+        if (chart.options.scales) {
+          if (chart.options.scales.x) {
+            if (chart.options.scales.x.grid) chart.options.scales.x.grid.color = gridColor;
+            if (chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = tickColor;
+          }
+          if (chart.options.scales.y) {
+            if (chart.options.scales.y.grid) chart.options.scales.y.grid.color = gridColor;
+            if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = tickColor;
+            if (chart.options.scales.y.title) chart.options.scales.y.title.color = textColor;
+          }
+          if (chart.options.scales.y1) {
+            if (chart.options.scales.y1.grid) chart.options.scales.y1.grid.color = gridColor;
+            if (chart.options.scales.y1.ticks) chart.options.scales.y1.ticks.color = tickColor;
+            if (chart.options.scales.y1.title) chart.options.scales.y1.title.color = textColor;
+          }
+        }
+        chart.update();
+      };
+
+      updateChartOptions(adminVehicleChart);
+      updateChartOptions(adminVehicleDailyChart);
+      updateChartOptions(adminBrandChart);
+      updateChartOptions(adminTopChargingChart);
+      updateChartOptions(adminChargingTrendChart);
+      updateChartOptions(adminDriverOverspeedsChart);
+    }
+    
+    // Auth Check
+    const email = localStorage.getItem('userEmail');
+    const role = localStorage.getItem('userRole');
+    
+    if(!email || !role) {
+      window.location.href = 'index.html';
+    }
+    
+    document.getElementById('nav-user-email').textContent = email;
+    document.getElementById('nav-user-role').textContent = role;
+    
+    // Global chart references
+    let adminVehicleChart = null;
+    let adminVehicleDailyChart = null;
+    let currentVehicleDailyData = [];
+    let adminBrandChart = null;
+    let adminTopChargingChart = null;
+    let adminChargingTrendChart = null;
+    let adminDriverOverspeedsChart = null;
+    
+    // New enhancement charts
+    let overspeedTrendsChart = null;
+    let brandComparisonRevenueChart = null;
+    let brandComparisonEfficiencyChart = null;
+    
+    // Number Animation Function (CountUp.js style)
+    function animateValue(element, start, end, duration, suffix = '', prefix = '') {
+      if (!element) return;
+      const range = end - start;
+      const increment = range / (duration / 16); // 60fps
+      let current = start;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+          current = end;
+          clearInterval(timer);
+        }
+        
+        let displayValue;
+        if (Math.abs(current) >= 1000) {
+          displayValue = formatNumber(current, 0);
+        } else {
+          displayValue = formatNumber(current, 1);
+        }
+        
+        element.textContent = prefix + displayValue + suffix;
+      }, 16);
+    }
+    
+    // Enhanced number update with animation
+    function updateNumberWithAnimation(elementId, value, suffix = '', prefix = '') {
+      const element = document.getElementById(elementId);
+      if (element) {
+        const currentText = element.textContent.replace(/[^\d.-]/g, '');
+        const currentValue = parseFloat(currentText) || 0;
+        animateValue(element, currentValue, value, 1000, suffix, prefix);
+      }
+    }
+    
+    // Indian Rupee formatting utility (₹1,25,000)
+    function formatRupees(val) {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0
+      }).format(val);
+    }
+    
+    function formatNumber(val, decimals = 0) {
+      return parseFloat(val).toFixed(decimals);
+    }
+
+    // Resolve driver ID from email helper
+    function resolveDriverId(emailStr) {
+      // For dataset compatibility: D001, D002, etc.
+      // Check if email contains driver number pattern
+      const match = emailStr.match(/driver(\d+)/i);
+      if (match) {
+        return 'D' + String(match[1]).padStart(3, '0');
+      }
+      
+      // Fallback: extract any number from email
+      const digits = emailStr.match(/\d+/);
+      if (digits) {
+        const num = parseInt(digits[0]);
+        if (num >= 1 && num <= 10) {
+          return 'D' + String(num).padStart(3, '0');
+        }
+      }
+      
+      // Default fallback
+      return 'D001';
+    }
+
+    const currentDriverId = resolveDriverId(email);
+
+    // ==========================================
+    // INITIALIZATION & ROUTING
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      updateThemeUI();
+      // Start HUD Clock
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('hud-clock-time').textContent = now.toTimeString().slice(0, 8);
+      }, 1000);
+
+      // UI Branch based on Role
+      if (role.toLowerCase() === 'admin') {
+        // Show Admin panel
+        document.getElementById('admin-dashboard-view').classList.remove('hidden');
+        document.getElementById('main-sidebar').classList.remove('hidden');
+        document.getElementById('viewport-title').innerHTML = 'FLEET <span>OVERVIEW</span>';
+        
+        // Fetch Admin overview initially
+        fetchAdminOverview();
+      } else {
+        // Show Driver panel
+        document.getElementById('driver-dashboard-view').classList.remove('hidden');
+        document.getElementById('main-sidebar').classList.add('hidden'); // Drivers do not see the sidebar menu
+        document.getElementById('viewport-title').innerHTML = `DRIVER COCKPIT <span>// ${currentDriverId}</span>`;
+        
+        // Set driver header info
+        document.getElementById('driver-user-email').textContent = email;
+        document.getElementById('driver-user-id').textContent = `Driver ID: ${currentDriverId}`;
+        
+        // Load Driver dashboard
+        console.log('Fetching driver dashboard for:', currentDriverId);
+        fetchDriverDashboard(currentDriverId);
+      }
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    // ==========================================
+    // ADMIN DASHBOARD MODULE
+    // ==========================================
+    
+    // ====================================================================
+    // SPEEDOMETER GAUGE DRAWING FUNCTION WITH ANIMATION
+    // ====================================================================
+    let currentGaugeValue = 0;
+    let gaugeAnimationFrame = null;
+    
+    function drawRangeGauge(targetRange, maxRange) {
+      const canvas = document.getElementById('range-gauge-canvas');
+      if (!canvas) return;
+      
+      // Cancel any existing animation
+      if (gaugeAnimationFrame) {
+        cancelAnimationFrame(gaugeAnimationFrame);
+      }
+      
+      const startValue = currentGaugeValue;
+      const startTime = performance.now();
+      const duration = 1500; // 1.5 seconds animation
+      
+      function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic for smooth deceleration
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        currentGaugeValue = startValue + (targetRange - startValue) * easeProgress;
+        
+        drawGaugeFrame(currentGaugeValue, maxRange);
+        
+        if (progress < 1) {
+          gaugeAnimationFrame = requestAnimationFrame(animate);
+        }
+      }
+      
+      gaugeAnimationFrame = requestAnimationFrame(animate);
+    }
+    
+    function drawGaugeFrame(currentRange, maxRange) {
+      const canvas = document.getElementById('range-gauge-canvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height - 20;
+      const radius = 100;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Calculate percentage
+      const percentage = Math.min(currentRange / maxRange, 1);
+      const angle = Math.PI * percentage; // 0 to π (180 degrees)
+      
+      // Draw background arc (gray)
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI, false);
+      ctx.lineWidth = 20;
+      ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)';
+      ctx.stroke();
+      
+      // Draw colored arc based on range
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, Math.PI, Math.PI + angle, false);
+      ctx.lineWidth = 20;
+      
+      // Color based on percentage
+      if (percentage > 0.6) {
+        ctx.strokeStyle = '#00ff88'; // Green
+      } else if (percentage > 0.3) {
+        ctx.strokeStyle = '#ffaa00'; // Orange
+      } else {
+        ctx.strokeStyle = '#ff3366'; // Red
+      }
+      ctx.stroke();
+      
+      // Draw needle with shadow
+      const needleAngle = Math.PI + angle;
+      const needleLength = radius - 10;
+      
+      // Shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + needleLength * Math.cos(needleAngle),
+        centerY + needleLength * Math.sin(needleAngle)
+      );
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ff5a00';
+      ctx.stroke();
+      
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      
+      // Draw center dot with glow
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ff5a00';
+      ctx.fill();
+      
+      // Inner white dot
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      
+      // Draw labels
+      ctx.font = 'bold 12px Rajdhani, sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.textAlign = 'left';
+      ctx.fillText('0', centerX - radius - 15, centerY + 5);
+      ctx.textAlign = 'right';
+      ctx.fillText(maxRange.toFixed(0), centerX + radius + 15, centerY + 5);
+    }
+    
+    // Switch admin tabs
+    function switchAdminTab(tabId, element) {
+      // Update sidebar styling
+      document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      
+      // Update tab page display
+      document.querySelectorAll('#admin-dashboard-view .page-view').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      
+      // Update Title
+      const titles = {
+        'overview': 'FLEET <span>OVERVIEW</span>',
+        'vehicles': 'VEHICLE <span>DETAILS</span>',
+        'brands': 'BRAND <span>ANALYTICS</span>',
+        'drivers': 'DRIVER <span>ANALYTICS</span>',
+        'driver-management': 'DRIVER <span>MANAGEMENT</span>',
+        'charging': 'CHARGING <span>ANALYTICS</span>',
+        'alerts': 'ALERTS <span>CENTER</span>'
+      };
+      document.getElementById('viewport-title').innerHTML = titles[tabId];
+      
+      // Fetch data for the active view
+      if (tabId === 'overview') {
+        fetchAdminOverview();
+      } else if (tabId === 'vehicles') {
+        initAdminVehicleSelector();
+      } else if (tabId === 'brands') {
+        selectAdminBrand('All');
+      } else if (tabId === 'drivers') {
+        initAdminDriverSelector();
+      } else if (tabId === 'driver-management') {
+        loadDriverManagement();
+      } else if (tabId === 'charging') {
+        fetchAdminCharging();
+      } else if (tabId === 'alerts') {
+        fetchAdminAlerts();
+      }
+    }
+
+    // 1. Fleet Overview Fetch
+    async function fetchAdminOverview() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/overview`);
+        if (!res.ok) throw new Error('Overview API error');
+        const d = await res.json();
+        
+        document.getElementById('ov-total-vehicles').textContent = d.total_vehicles;
+        document.getElementById('ov-vehicles-running').textContent = d.vehicles_running;
+        document.getElementById('ov-vehicles-charging').textContent = d.vehicles_charging;
+        document.getElementById('ov-vehicles-garage').textContent = d.vehicles_garage;
+        
+        document.getElementById('ov-avg-battery').innerHTML = `${formatNumber(d.avg_battery, 1)}<span>%</span>`;
+        document.getElementById('ov-avg-health').innerHTML = `${formatNumber(d.avg_battery_health, 1)}<span>%</span>`;
+        
+        document.getElementById('ov-total-revenue').textContent = formatRupees(d.total_revenue);
+        document.getElementById('ov-total-expenses').textContent = formatRupees(d.total_expenses);
+        document.getElementById('ov-total-profit').textContent = formatRupees(d.total_profit);
+        
+        // Fetch Telemetry list
+        const resList = await fetch(`${BACKEND_URL}/api/admin/vehicles`);
+        if (!resList.ok) throw new Error('Vehicles list error');
+        const vehicles = await resList.json();
+        
+        const tbody = document.querySelector('#ov-telemetry-table tbody');
+        tbody.innerHTML = '';
+        
+        vehicles.forEach(v => {
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-weight:700; color:var(--text);">${v.vehicle_id}</td>
+              <td>${v.brand} ${v.model}</td>
+              <td style="color:var(--text-muted);">${v.body_type || '--'}</td>
+              <td style="text-align:center; font-weight:600;">${v.total_seats || '--'}</td>
+              <td style="color:var(--text-muted);">${v.driver_id}</td>
+              <td>
+                <div style="font-size:0.85rem; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
+                  <span>${formatNumber(v.battery_percentage, 0)}%</span>
+                </div>
+                <div class="battery-bar-bg">
+                  <div class="battery-bar-fill" style="width: ${v.battery_percentage}%;"></div>
+                </div>
+              </td>
+              <td style="font-weight:600;">${formatNumber(v.battery_health, 0)}%</td>
+              <td>${formatNumber(v.estimated_range_km, 0)} km</td>
+              <td style="color:var(--success); font-weight:600;">${formatNumber(v.max_range_km, 0)} km</td>
+              <td>
+                <span class="status-badge ${v.status.toLowerCase()}">${v.status}</span>
+              </td>
+              <td>
+                <button class="btn-action" onclick="jumpToVehicleDetails('${v.vehicle_id}')">Details</button>
+              </td>
+            </tr>
+          `;
+        });
+        
+        // Pull small alerts snapshot
+        const resAlerts = await fetch(`${BACKEND_URL}/api/admin/alerts`);
+        if (resAlerts.ok) {
+          const al = await resAlerts.json();
+          
+          // Render Admin Emergency Alert Area
+          const emergencyArea = document.getElementById('admin-emergency-alert-area');
+          if (al.emergencies && al.emergencies.length > 0) {
+            emergencyArea.style.display = 'block';
+            let emergencyItemsHtml = '';
+            al.emergencies.forEach(e => {
+              emergencyItemsHtml += `<div style="font-weight:700; font-size:1.05rem; display:flex; gap:10px; align-items:center;"><i class="fa-solid fa-triangle-exclamation" style="animation: fa-blink 1s ease infinite;"></i> ${e.message} <span style="font-size:0.8rem; font-weight:400; color:rgba(255,255,255,0.7);">(${e.timestamp})</span></div>`;
+            });
+            emergencyArea.innerHTML = `
+              <div class="card" style="border: 2px solid #ff3366; background: rgba(255, 51, 102, 0.08); border-radius: 12px; padding: 1.2rem; box-shadow: 0 0 20px rgba(255, 51, 102, 0.25); animation: blink-shadow 2s infinite alternate;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                  <div>
+                    <h3 style="color:#ff3366; margin:0 0 6px 0; font-family:'Bebas Neue'; font-size:1.6rem; letter-spacing:1px;"><i class="fa-solid fa-bell" style="animation: fa-bounce 1s infinite;"></i> CRITICAL DRIVER EMERGENCY DETECTED</h3>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      ${emergencyItemsHtml}
+                    </div>
+                  </div>
+                  <button class="btn" onclick="resolveEmergencies()" style="background:#ff3366; color:#fff; font-weight:700; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-family:'Rajdhani'; letter-spacing:1px; box-shadow:0 4px 10px rgba(255,51,102,0.3); transition:all 0.3s ease;">
+                    <i class="fa-solid fa-circle-check"></i> RESOLVE ALL ALERTS
+                  </button>
+                </div>
+              </div>
+            `;
+          } else {
+            emergencyArea.style.display = 'none';
+          }
+
+          const alertsListDiv = document.getElementById('ov-alerts-summary-list');
+          alertsListDiv.innerHTML = '';
+          
+          let alertItems = [];
+          
+          // Push emergencies first
+          if (al.emergencies) {
+            al.emergencies.forEach(a => alertItems.push({ icon: 'fa-triangle-exclamation', msg: a.message, color: '#ff3366' }));
+          }
+          
+          al.critical_battery.forEach(a => alertItems.push({ icon: 'fa-battery-empty', msg: a.message, color: 'var(--alert)' }));
+          al.degraded_health.forEach(a => alertItems.push({ icon: 'fa-heart-crack', msg: a.message, color: 'var(--warning)' }));
+          al.overspeeding.forEach(a => alertItems.push({ icon: 'fa-gauge-high', msg: a.message, color: 'var(--alert)' }));
+          al.in_garage.forEach(a => alertItems.push({ icon: 'fa-screwdriver-wrench', msg: a.message, color: 'var(--orange)' }));
+          
+          if (alertItems.length === 0) {
+            alertsListDiv.innerHTML = `
+              <div style="text-align:center; padding:1.5rem 0; color:var(--text-muted);">
+                <i class="fa-solid fa-shield-halved" style="font-size:1.8rem; color:var(--success); margin-bottom:6px;"></i>
+                <p style="font-size:0.85rem;">Telemetry nominal. No active warnings.</p>
+              </div>
+            `;
+          } else {
+            // display top 5 alerts in overview card
+            alertItems.slice(0, 5).forEach(a => {
+              alertsListDiv.innerHTML += `
+                <div class="alert-item" style="--alert-color: ${a.color};">
+                  <i class="fa-solid ${a.icon}"></i>
+                  <div class="alert-item-msg">${a.msg}</div>
+                </div>
+              `;
+            });
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function jumpToVehicleDetails(vehicleId) {
+      const itemEl = document.querySelectorAll('.menu-item')[1];
+      switchAdminTab('vehicles', itemEl);
+      setTimeout(() => {
+        const select = document.getElementById('admin-vehicle-select');
+        select.value = vehicleId;
+        loadAdminVehicleDetails(vehicleId);
+      }, 100);
+    }
+
+    // 2. Vehicle Details Module
+    async function initAdminVehicleSelector() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/vehicles`);
+        const vehicles = await res.json();
+        
+        const select = document.getElementById('admin-vehicle-select');
+        select.innerHTML = '';
+        vehicles.forEach(v => {
+          select.innerHTML += `<option value="${v.vehicle_id}">${v.vehicle_id} // ${v.brand} ${v.model}</option>`;
+        });
+        
+        if (vehicles.length > 0) {
+          loadAdminVehicleDetails(vehicles[0].vehicle_id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Filter vehicle dropdown based on search input
+    function filterVehicleDropdown() {
+      const searchInput = document.getElementById('vehicle-search-input');
+      const dropdown = document.getElementById('admin-vehicle-select');
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      
+      // Get all options
+      const options = Array.from(dropdown.options);
+      
+      // Filter and show/hide options
+      options.forEach(option => {
+        const text = option.text.toLowerCase();
+        const value = option.value.toLowerCase();
+        
+        if (text.includes(searchTerm) || value.includes(searchTerm)) {
+          option.style.display = '';
+        } else {
+          option.style.display = 'none';
+        }
+      });
+      
+      // Auto-select first visible option if search matches
+      if (searchTerm) {
+        const firstVisible = options.find(opt => opt.style.display !== 'none' && opt.value);
+        if (firstVisible) {
+          dropdown.value = firstVisible.value;
+          loadAdminVehicleDetails(firstVisible.value);
+        }
+      }
+    }
+
+    async function loadAdminVehicleDetails(vehicleId) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/vehicle/${vehicleId}`);
+        if (!res.ok) throw new Error('Vehicle Details error');
+        const v = await res.json();
+        
+        document.getElementById('ad-v-id').textContent = v.vehicle_id;
+        document.getElementById('ad-v-brand-model').textContent = `${v.brand} ${v.model}`;
+        
+        // Load vehicle image based on brand and model
+        const vehicleImage = document.getElementById('vehicle-image');
+        const vehiclePlaceholder = document.getElementById('vehicle-image-placeholder');
+        
+        // Map brand and model to image filenames
+        const getImagePath = (brand, model) => {
+          const normalized = `${brand} ${model}`.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+          
+          // Direct mapping for known vehicles
+          const imageMap = {
+            'mahindra_be_6': 'car_png/mahindra_be6.png',
+            'mahindra_be6': 'car_png/mahindra_be6.png',
+            'hyundai_creta_ev': 'car_png/hyundai_creta.png',
+            'hyundai_creta': 'car_png/hyundai_creta.png',
+            'tata_tiago_ev': 'car_png/tata_tiago.png',
+            'tata_tiago': 'car_png/tata_tiago.png',
+            'tata_xpres_t_ev': 'car_png/tata_xpres_t.png',
+            'tata_xprest_ev': 'car_png/tata_xpres_t.png',
+            'suzuki_vitara': 'car_png/suzuki_evitara.png',
+            'suzuki_evitara': 'car_png/suzuki_evitara.png'
+          };
+          
+          return imageMap[normalized];
+        };
+        
+        const imagePath = getImagePath(v.brand, v.model);
+        
+        if (imagePath) {
+          vehicleImage.src = imagePath;
+          vehicleImage.style.display = 'block';
+          vehiclePlaceholder.style.display = 'none';
+          vehicleImage.onerror = function() {
+            vehicleImage.style.display = 'none';
+            vehiclePlaceholder.style.display = 'block';
+            vehiclePlaceholder.textContent = 'Image not available';
+          };
+        } else {
+          vehicleImage.style.display = 'none';
+          vehiclePlaceholder.style.display = 'block';
+          vehiclePlaceholder.textContent = 'No image for this model';
+        }
+        
+        document.getElementById('ad-v-body-type').textContent = v.body_type || '--';
+        document.getElementById('ad-v-total-seats').textContent = v.total_seats || '--';
+        document.getElementById('ad-v-driver').textContent = v.driver_id;
+        document.getElementById('ad-v-status').textContent = v.status;
+        document.getElementById('ad-v-capacity').textContent = `${v.battery_capacity_kwh} kWh`;
+        document.getElementById('ad-v-weight').textContent = `${v.vehicle_weight_kg} kg`;
+        document.getElementById('ad-v-max-range').textContent = `${formatNumber(v.max_range_km, 1)} km`;
+        document.getElementById('ad-v-max-range-100').textContent = `${formatNumber(v.max_range_100_health, 1)} km`;
+        
+        document.getElementById('ad-v-battery').textContent = `${formatNumber(v.current_battery, 1)}%`;
+        document.getElementById('ad-v-health').textContent = `${formatNumber(v.current_health, 1)}%`;
+        document.getElementById('ad-v-range').textContent = `${formatNumber(v.current_range, 1)} km`;
+        document.getElementById('ad-v-distance').textContent = `${formatNumber(v.total_distance, 1)} km`;
+        document.getElementById('ad-v-total-trips').textContent = v.total_trips || '--';
+        document.getElementById('ad-v-charged-count').textContent = v.vehicle_charged_count || '--';
+        document.getElementById('ad-v-total-charging-cost').textContent = v.total_charging_cost ? formatRupees(v.total_charging_cost) : '--';
+        document.getElementById('ad-v-avg-charging-cost').textContent = v.avg_charging_cost ? formatRupees(v.avg_charging_cost) : '--';
+        document.getElementById('ad-v-passengers').textContent = v.total_passengers;
+        
+        const tbody = document.getElementById('ad-v-monthly-tbody');
+        tbody.innerHTML = '';
+        
+        const chartMonths = [];
+        const chartRevenues = [];
+        const chartExpenses = [];
+        
+        v.monthly_analytics.forEach(m => {
+          const profit = m.revenue - m.expense;
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-weight:700;">${m.month}</td>
+              <td style="color:var(--success);">${formatRupees(m.revenue)}</td>
+              <td style="color:var(--alert);">${formatRupees(m.expense)}</td>
+              <td style="font-weight:700; color:${profit >= 0 ? 'var(--white)' : 'var(--alert)'}">${formatRupees(profit)}</td>
+              <td>${m.charging_count}</td>
+              <td>${m.overspeed_count}</td>
+            </tr>
+          `;
+          chartMonths.push(m.month);
+          chartRevenues.push(m.revenue);
+          chartExpenses.push(m.expense);
+        });
+        
+        // Render Chart
+        if (adminVehicleChart) {
+          adminVehicleChart.destroy();
+        }
+        
+        const ctx = document.getElementById('admin-vehicle-chart').getContext('2d');
+        adminVehicleChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: chartMonths,
+            datasets: [
+              {
+                label: 'Revenue',
+                data: chartRevenues,
+                backgroundColor: 'rgba(0, 255, 136, 0.65)',
+                borderColor: '#00ff88',
+                borderWidth: 1
+              },
+              {
+                label: 'Expenses',
+                data: chartExpenses,
+                backgroundColor: 'rgba(255, 90, 0, 0.65)',
+                borderColor: '#ff5a00',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: getChartThemeOptions(false)
+        });
+        
+        // Render Daily Chart
+        currentVehicleDailyData = v.daily_analytics;
+
+        if (adminVehicleDailyChart) {
+          adminVehicleDailyChart.destroy();
+        }
+
+        const isLight = currentTheme === 'light';
+        const textColor = isLight ? '#1a1a1a' : '#e7decd';
+        const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)';
+        const tickColor = isLight ? '#555' : '#888';
+
+        const ctxDaily = document.getElementById('admin-vehicle-daily-chart').getContext('2d');
+        adminVehicleDailyChart = new Chart(ctxDaily, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Revenue',
+                data: [],
+                borderColor: '#00ff88',
+                backgroundColor: 'rgba(0, 255, 136, 0.06)',
+                yAxisID: 'y',
+                borderWidth: 2.5,
+                tension: 0.25,
+                fill: true
+              },
+              {
+                label: 'Expense',
+                data: [],
+                borderColor: '#ff3366',
+                backgroundColor: 'rgba(255, 51, 102, 0.06)',
+                yAxisID: 'y',
+                borderWidth: 2.5,
+                tension: 0.25,
+                fill: true
+              },
+              {
+                label: 'Profit',
+                data: [],
+                borderColor: '#00ccff',
+                backgroundColor: 'rgba(0, 204, 255, 0.06)',
+                yAxisID: 'y',
+                borderWidth: 2.5,
+                tension: 0.25,
+                fill: true
+              },
+              {
+                label: 'Charges',
+                data: [],
+                borderColor: '#ffaa00',
+                backgroundColor: 'rgba(255, 170, 0, 0.1)',
+                yAxisID: 'y1',
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false,
+                borderDash: [5, 5]
+              },
+              {
+                label: 'Overspeeds',
+                data: [],
+                borderColor: '#cc66ff',
+                backgroundColor: 'rgba(204, 102, 255, 0.1)',
+                yAxisID: 'y1',
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false,
+                borderDash: [3, 3]
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: textColor,
+                  font: { family: 'Rajdhani', weight: '600' }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: gridColor },
+                ticks: {
+                  color: tickColor,
+                  font: { family: 'Rajdhani', weight: '600' }
+                }
+              },
+              y: {
+                type: 'linear',
+                position: 'left',
+                grid: { color: gridColor },
+                ticks: {
+                  color: tickColor,
+                  font: { family: 'Rajdhani', weight: '600' },
+                  callback: function(value) { return '₹' + value.toLocaleString('en-IN'); }
+                },
+                title: {
+                  display: true,
+                  text: 'Financials (INR)',
+                  color: textColor,
+                  font: { family: 'Rajdhani', weight: '700' }
+                }
+              },
+              y1: {
+                type: 'linear',
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: {
+                  color: tickColor,
+                  font: { family: 'Rajdhani', weight: '600' }
+                },
+                title: {
+                  display: true,
+                  text: 'Event Counts',
+                  color: textColor,
+                  font: { family: 'Rajdhani', weight: '700' }
+                }
+              }
+            }
+          }
+        });
+
+        // Initialize selectors: auto-detect the latest available month in the data
+        const availableMonthMap = { '03': 'March', '04': 'April', '05': 'May', '06': 'June' };
+        const monthsInData = new Set();
+        v.daily_analytics.forEach(row => {
+          const mm = row.date.split('-')[1];
+          if (availableMonthMap[mm]) monthsInData.add(availableMonthMap[mm]);
+        });
+        // Pick the last month found in data, fall back to June
+        const monthOrder = ['March', 'April', 'May', 'June'];
+        let autoMonth = 'June';
+        monthOrder.forEach(m => { if (monthsInData.has(m)) autoMonth = m; });
+        // Only reset month selection if no valid vehicle data loaded yet (first load)
+        const monthSelect = document.getElementById('ad-v-daily-month-select');
+        if (!monthSelect.dataset.userSelected) {
+          monthSelect.value = autoMonth;
+        } else if (!monthsInData.has(monthSelect.value)) {
+          // If previously-selected month has no data for this vehicle, switch to best
+          monthSelect.value = autoMonth;
+        }
+        document.getElementById('ad-v-daily-metric-select').value =
+          document.getElementById('ad-v-daily-metric-select').value || 'all';
+        updateVehicleDailyChart();
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Daily Chart filtering and rendering function
+    function updateVehicleDailyChart() {
+      if (!adminVehicleDailyChart || !currentVehicleDailyData.length) return;
+
+      const monthSelect = document.getElementById('ad-v-daily-month-select');
+      const selectedMonth = monthSelect.value;
+      const selectedMetric = document.getElementById('ad-v-daily-metric-select').value;
+
+      // Mark that user explicitly chose this month
+      monthSelect.dataset.userSelected = 'true';
+
+      const monthMap = {
+        'March': '-03-',
+        'April': '-04-',
+        'May': '-05-',
+        'June': '-06-'
+      };
+      const monthPattern = monthMap[selectedMonth];
+      
+      const filteredData = currentVehicleDailyData.filter(d => d.date.includes(monthPattern));
+
+      const noDataOverlay = document.getElementById('daily-chart-no-data');
+
+      if (filteredData.length === 0) {
+        // Show no-data overlay, clear chart
+        adminVehicleDailyChart.data.labels = [];
+        adminVehicleDailyChart.data.datasets.forEach(ds => ds.data = []);
+        adminVehicleDailyChart.update();
+        if (noDataOverlay) noDataOverlay.style.display = 'flex';
+        return;
+      }
+
+      if (noDataOverlay) noDataOverlay.style.display = 'none';
+
+      const dailyLabels = [];
+      const dailyRevenues = [];
+      const dailyExpenses = [];
+      const dailyProfits = [];
+      const dailyCharges = [];
+      const dailyOverspeeds = [];
+
+      filteredData.forEach(d => {
+        const parts = d.date.split('-');
+        const monthsShort = { '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun' };
+        const label = `${monthsShort[parts[1]] || parts[1]} ${parseInt(parts[2], 10)}`;
+        
+        dailyLabels.push(label);
+        dailyRevenues.push(d.revenue);
+        dailyExpenses.push(d.expense);
+        dailyProfits.push(d.profit);
+        dailyCharges.push(d.charging_count);
+        dailyOverspeeds.push(d.overspeed_count);
+      });
+
+      adminVehicleDailyChart.data.labels = dailyLabels;
+
+      const showAll = selectedMetric === 'all';
+      
+      adminVehicleDailyChart.data.datasets[0].data = dailyRevenues;
+      adminVehicleDailyChart.data.datasets[0].hidden = !(showAll || selectedMetric === 'revenue');
+
+      adminVehicleDailyChart.data.datasets[1].data = dailyExpenses;
+      adminVehicleDailyChart.data.datasets[1].hidden = !(showAll || selectedMetric === 'expense');
+
+      adminVehicleDailyChart.data.datasets[2].data = dailyProfits;
+      adminVehicleDailyChart.data.datasets[2].hidden = !(showAll || selectedMetric === 'profit');
+
+      adminVehicleDailyChart.data.datasets[3].data = dailyCharges;
+      adminVehicleDailyChart.data.datasets[3].hidden = !(showAll || selectedMetric === 'charges');
+
+      adminVehicleDailyChart.data.datasets[4].data = dailyOverspeeds;
+      adminVehicleDailyChart.data.datasets[4].hidden = !(showAll || selectedMetric === 'overspeeds');
+
+      const hasFinancial = showAll || ['revenue', 'expense', 'profit'].includes(selectedMetric);
+      const hasCount = showAll || ['charges', 'overspeeds'].includes(selectedMetric);
+
+      adminVehicleDailyChart.options.scales.y.display = hasFinancial;
+      adminVehicleDailyChart.options.scales.y1.display = hasCount;
+
+      adminVehicleDailyChart.update();
+    }
+
+    // 3. Brand Analytics Module
+    async function selectAdminBrand(brandName) {
+      document.querySelectorAll('.brand-selector-card').forEach(el => el.classList.remove('active'));
+      const activeCard = document.getElementById(`brand-card-${brandName}`);
+      if (activeCard) activeCard.classList.add('active');
+      
+      if (brandName === 'All') {
+        // Show All Brands Comparison View
+        document.getElementById('brand-view-all').style.display = 'block';
+        document.getElementById('brand-view-single').style.display = 'none';
+        await fetchAllBrandsComparison();
+      } else {
+        // Show Individual Brand View
+        document.getElementById('brand-view-all').style.display = 'none';
+        document.getElementById('brand-view-single').style.display = 'block';
+        await fetchSingleBrandDetails(brandName);
+      }
+    }
+    
+    async function fetchAllBrandsComparison() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/brands/comparison`);
+        if (!res.ok) throw new Error('Brands comparison error');
+        const data = await res.json();
+        
+        // Update best performers - find the actual values to display
+        const bestProfitBrand = data.brands.find(b => b.brand === data.best_profit);
+        const mostEfficientBrand = data.brands.find(b => b.brand === data.most_efficient);
+        const bestMarginBrand = data.brands.find(b => b.brand === data.best_margin);
+        
+        document.getElementById('best-profit-brand').textContent = bestProfitBrand ? 
+          `${bestProfitBrand.brand}: ${formatRupees(bestProfitBrand.profit)}` : '--';
+        document.getElementById('most-efficient-brand').textContent = mostEfficientBrand ? 
+          `${mostEfficientBrand.brand}: ${mostEfficientBrand.avg_efficiency}` : '--';
+        document.getElementById('best-margin-brand').textContent = bestMarginBrand ? 
+          `${bestMarginBrand.brand}: ${bestMarginBrand.profit_margin}%` : '--';
+        document.getElementById('total-brands').textContent = data.total_brands;
+        
+        // Populate comparison table
+        const tbody = document.getElementById('brand-comparison-tbody');
+        tbody.innerHTML = '';
+        
+        const brandLabels = [];
+        const brandRevenues = [];
+        const brandProfits = [];
+        const brandEfficiencies = [];
+        
+        data.brands.forEach(b => {
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-weight:700;">${b.brand}</td>
+              <td>${b.vehicle_count}</td>
+              <td style="color:var(--success);">${formatRupees(b.total_revenue)}</td>
+              <td style="color:var(--alert);">${formatRupees(b.total_expense)}</td>
+              <td style="font-weight:700; color:${b.profit >= 0 ? 'var(--white)' : 'var(--alert)'}">${formatRupees(b.profit)}</td>
+              <td>${b.profit_margin}%</td>
+              <td>${b.avg_efficiency}</td>
+              <td>${b.avg_battery_health}%</td>
+            </tr>
+          `;
+          
+          brandLabels.push(b.brand);
+          brandRevenues.push(b.total_revenue);
+          brandProfits.push(b.profit);
+          brandEfficiencies.push(b.avg_efficiency);
+        });
+        
+        // Revenue/Profit Chart
+        if (brandComparisonRevenueChart) {
+          brandComparisonRevenueChart.destroy();
+        }
+        const ctxRev = document.getElementById('brand-comparison-revenue-chart').getContext('2d');
+        brandComparisonRevenueChart = new Chart(ctxRev, {
+          type: 'bar',
+          data: {
+            labels: brandLabels,
+            datasets: [
+              {
+                label: 'Revenue',
+                data: brandRevenues,
+                backgroundColor: 'rgba(0, 255, 136, 0.65)',
+                borderColor: '#00ff88',
+                borderWidth: 1
+              },
+              {
+                label: 'Profit',
+                data: brandProfits,
+                backgroundColor: 'rgba(255, 90, 0, 0.65)',
+                borderColor: '#ff5a00',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: getChartThemeOptions(false)
+        });
+        
+        // Efficiency Chart
+        if (brandComparisonEfficiencyChart) {
+          brandComparisonEfficiencyChart.destroy();
+        }
+        const ctxEff = document.getElementById('brand-comparison-efficiency-chart').getContext('2d');
+        brandComparisonEfficiencyChart = new Chart(ctxEff, {
+          type: 'line',
+          data: {
+            labels: brandLabels,
+            datasets: [{
+              label: 'Avg Efficiency (km/kWh)',
+              data: brandEfficiencies,
+              borderColor: 'var(--orange)',
+              backgroundColor: 'rgba(255, 90, 0, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointBackgroundColor: 'var(--orange)',
+              pointRadius: 5
+            }]
+          },
+          options: getChartThemeOptions(true)
+        });
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    async function fetchSingleBrandDetails(brandName) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/brand/${brandName}`);
+        if (!res.ok) throw new Error('Brand Details error');
+        const b = await res.json();
+        
+        document.getElementById('br-revenue').textContent = formatRupees(b.total_revenue);
+        document.getElementById('br-expense').textContent = formatRupees(b.total_expenses);
+        document.getElementById('br-profit').textContent = formatRupees(b.total_profit);
+        
+        document.getElementById('br-health').innerHTML = `${formatNumber(b.avg_battery_health, 1)}<span>%</span>`;
+        document.getElementById('br-range').innerHTML = `${formatNumber(b.avg_range, 1)}<span>km</span>`;
+        
+        document.getElementById('br-charging').textContent = b.charging_events;
+        document.getElementById('br-overspeed').textContent = b.overspeed_events;
+        
+        const tbody = document.getElementById('br-monthly-tbody');
+        tbody.innerHTML = '';
+        
+        const chartMonths = [];
+        const chartRevenues = [];
+        const chartExpenses = [];
+        
+        b.monthly_analytics.forEach(m => {
+          const profit = m.revenue - m.expense;
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-weight:700;">${m.month}</td>
+              <td style="color:var(--success);">${formatRupees(m.revenue)}</td>
+              <td style="color:var(--alert);">${formatRupees(m.expense)}</td>
+              <td style="font-weight:700; color:${profit >= 0 ? 'var(--white)' : 'var(--alert)'}">${formatRupees(profit)}</td>
+            </tr>
+          `;
+          chartMonths.push(m.month);
+          chartRevenues.push(m.revenue);
+          chartExpenses.push(m.expense);
+        });
+        
+        if (adminBrandChart) {
+          adminBrandChart.destroy();
+        }
+        
+        const ctx = document.getElementById('admin-brand-chart').getContext('2d');
+        adminBrandChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: chartMonths,
+            datasets: [
+              {
+                label: 'Revenue',
+                data: chartRevenues,
+                backgroundColor: 'rgba(0, 255, 136, 0.65)',
+                borderColor: '#00ff88',
+                borderWidth: 1
+              },
+              {
+                label: 'Expenses',
+                data: chartExpenses,
+                backgroundColor: 'rgba(255, 90, 0, 0.65)',
+                borderColor: '#ff5a00',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: getChartThemeOptions(false)
+        });
+        
+        // Fetch and display brand vehicles
+        await fetchBrandVehicles(brandName);
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    async function fetchBrandVehicles(brandName) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/brands/${brandName}/vehicles`);
+        if (!res.ok) throw new Error('Brand vehicles error');
+        const data = await res.json();
+        
+        document.getElementById('brand-name-vehicles').textContent = data.brand;
+        
+        const tbody = document.getElementById('brand-vehicles-tbody');
+        tbody.innerHTML = '';
+        
+        if (data.vehicles.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No vehicles found</td></tr>';
+          return;
+        }
+        
+        data.vehicles.forEach(v => {
+          const statusColor = v.status === 'Running' ? 'var(--success)' : v.status === 'Charging' ? 'var(--warning)' : 'var(--alert)';
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-weight:700;">${v.vehicle_id}</td>
+              <td>${v.model}</td>
+              <td>${v.body_type}</td>
+              <td>${v.driver_id}</td>
+              <td style="color:${statusColor};">${v.status}</td>
+              <td>${v.battery_percentage}%</td>
+              <td>${v.battery_health}%</td>
+              <td>${v.estimated_range_km}</td>
+              <td>${v.total_distance}</td>
+              <td style="color:var(--success);">${formatRupees(v.total_revenue)}</td>
+              <td>${v.efficiency}</td>
+            </tr>
+          `;
+        });
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 4. Driver Analytics Module
+    async function initAdminDriverSelector() {
+      try {
+        // Fetch overspeed comparison first
+        await fetchDriversOverspeedComparison();
+        await fetchDriversOverspeedTrends();
+        
+        const res = await fetch(`${BACKEND_URL}/api/admin/drivers`);
+        const drivers = await res.json();
+        
+        const container = document.getElementById('admin-drivers-list');
+        container.innerHTML = '';
+        
+        drivers.forEach((d, idx) => {
+          container.innerHTML += `
+            <div class="driver-list-row" id="ad-d-row-${d.driver_id}" onclick="selectAdminDriver('${d.driver_id}')">
+              <div>
+                <h4>Driver ${d.driver_id}</h4>
+                <p>Vehicle: ${d.assigned_vehicle}</p>
+              </div>
+              <i class="fa-solid fa-chevron-right" style="color:var(--orange);"></i>
+            </div>
+          `;
+        });
+        
+        if (drivers.length > 0) {
+          selectAdminDriver(drivers[0].driver_id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    async function fetchDriversOverspeedComparison() {
+      try {
+        const filterValue = document.getElementById('overspeed-filter')?.value || 'all';
+        const res = await fetch(`${BACKEND_URL}/api/admin/drivers/overspeed-comparison?filter=${filterValue}`);
+        if (!res.ok) throw new Error('Overspeed comparison error');
+        const data = await res.json();
+        
+        // Update fleet stats with animation
+        document.getElementById('os-avg-val').textContent = data.fleet_avg;
+        document.getElementById('os-total-drivers').textContent = data.total_drivers;
+        
+        // Best performer (min overspeeds)
+        const bestDriver = data.drivers.find(d => d.total_overspeeds === data.fleet_min);
+        if (bestDriver) {
+          document.getElementById('os-min-val').textContent = data.fleet_min;
+          document.getElementById('os-min-label').textContent = `${bestDriver.driver_name} (${bestDriver.driver_id})`;
+        }
+        
+        // Worst performer (max overspeeds)
+        const worstDriver = data.drivers.find(d => d.total_overspeeds === data.fleet_max);
+        if (worstDriver) {
+          document.getElementById('os-max-val').textContent = data.fleet_max;
+          document.getElementById('os-max-label').textContent = `${worstDriver.driver_name} (${worstDriver.driver_id})`;
+        }
+        
+        // Populate comparison table
+        const tbody = document.getElementById('overspeed-comparison-tbody');
+        tbody.innerHTML = '';
+        
+        data.drivers.forEach(d => {
+          const rankColor = d.rank <= 3 ? 'var(--success)' : d.rank >= data.total_drivers - 2 ? 'var(--alert)' : 'var(--white)';
+          const ecoColor = d.eco_score >= 80 ? 'var(--success)' : d.eco_score >= 50 ? 'var(--warning)' : 'var(--alert)';
+          
+          tbody.innerHTML += `
+            <tr onclick="selectAdminDriver('${d.driver_id}')" style="cursor:pointer;">
+              <td style="color:${rankColor}; font-weight:700;">${d.rank_label} ${d.rank}</td>
+              <td style="font-weight:700;">${d.driver_id}</td>
+              <td style="font-weight:600;">${d.driver_name}</td>
+              <td style="color:var(--alert);">${d.total_overspeeds}</td>
+              <td>${d.max_speed}</td>
+              <td>${d.avg_speed}</td>
+              <td style="color:${ecoColor}; font-weight:700;">${d.eco_score}</td>
+              <td>${d.total_distance}</td>
+              <td>${d.total_trips}</td>
+            </tr>
+          `;
+        });
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    async function fetchDriversOverspeedTrends() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/drivers/overspeed-trends?months=3`);
+        if (!res.ok) throw new Error('Overspeed trends error');
+        const data = await res.json();
+        
+        // Prepare datasets for each driver
+        const datasets = [];
+        const colors = ['#ff5a00', '#00ff88', '#ffaa00', '#ff3366', '#00aaff', '#aa00ff', '#ff0066', '#00ff00', '#0066ff'];
+        let colorIndex = 0;
+        
+        for (const [driverId, overspeeds] of Object.entries(data.drivers)) {
+          const color = colors[colorIndex % colors.length];
+          datasets.push({
+            label: driverId,
+            data: overspeeds,
+            borderColor: color,
+            backgroundColor: color + '20',
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: color
+          });
+          colorIndex++;
+        }
+        
+        // Render chart
+        if (overspeedTrendsChart) {
+          overspeedTrendsChart.destroy();
+        }
+        
+        const ctx = document.getElementById('overspeed-trends-chart').getContext('2d');
+        const opts = getChartThemeOptions(true);
+        opts.scales.y.ticks.precision = 0;
+        
+        overspeedTrendsChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.months,
+            datasets: datasets
+          },
+          options: opts
+        });
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function selectAdminDriver(driverId) {
+      document.querySelectorAll('.driver-list-row').forEach(el => el.classList.remove('active'));
+      const activeRow = document.getElementById(`ad-d-row-${driverId}`);
+      if (activeRow) activeRow.classList.add('active');
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver/${driverId}`);
+        if (!res.ok) throw new Error('Driver detail error');
+        const d = await res.json();
+        
+        document.getElementById('ad-d-id').textContent = d.driver_id;
+        document.getElementById('ad-d-vehicle').textContent = `${d.assigned_vehicle} - ${d.vehicle_model}`;
+        document.getElementById('ad-d-trips').textContent = d.total_trips;
+        document.getElementById('ad-d-distance').textContent = `${formatNumber(d.total_distance, 1)} km`;
+        document.getElementById('ad-d-overspeed').textContent = d.overspeed_count;
+        document.getElementById('ad-d-speed').textContent = `${formatNumber(d.average_speed, 1)} km/h`;
+        document.getElementById('ad-d-revenue').textContent = formatRupees(d.revenue_generated);
+        document.getElementById('ad-d-charging').textContent = d.charging_events;
+        
+        // Radial Eco Score
+        document.getElementById('ad-d-eco-value').innerHTML = `${d.eco_score}<span>Score</span>`;
+        const circle = document.getElementById('ad-d-eco-circle');
+        const circ = 345; // 2 * PI * r = 2 * PI * 55 = 345
+        const offset = circ - (d.eco_score / 100) * circ;
+        circle.style.strokeDashoffset = offset;
+        
+        if (d.eco_score >= 80) {
+          circle.style.stroke = 'var(--success)';
+        } else if (d.eco_score >= 50) {
+          circle.style.stroke = 'var(--warning)';
+        } else {
+          circle.style.stroke = 'var(--alert)';
+        }
+        
+        // --- Render Driver Overspeeds Chart ---
+        if (adminDriverOverspeedsChart) {
+          adminDriverOverspeedsChart.destroy();
+        }
+        
+        const chartMonths = d.overspeed_trend.map(item => item.month);
+        const chartOverspeeds = d.overspeed_trend.map(item => item.overspeed_count);
+        
+        const ctx = document.getElementById('admin-driver-overspeeds-chart').getContext('2d');
+        const opts = getChartThemeOptions(false);
+        opts.scales.y.ticks.precision = 0;
+        
+        adminDriverOverspeedsChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: chartMonths,
+            datasets: [{
+              label: 'Overspeed Events',
+              data: chartOverspeeds,
+              backgroundColor: 'rgba(255, 51, 102, 0.65)',
+              borderColor: '#ff3366',
+              borderWidth: 1
+            }]
+          },
+          options: opts
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 5. Charging Analytics Module
+    async function fetchAdminCharging() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/charging`);
+        if (!res.ok) throw new Error('Charging API error');
+        const c = await res.json();
+        
+        document.getElementById('ch-events').textContent = c.total_charging_events;
+        document.getElementById('ch-cost').textContent = formatRupees(c.total_charging_cost);
+        document.getElementById('ch-avg-cost').textContent = formatRupees(c.average_charging_cost);
+        document.getElementById('ch-most-charged').textContent = c.most_charged_vehicle;
+        
+        // Top 5 Chart
+        if (adminTopChargingChart) {
+          adminTopChargingChart.destroy();
+        }
+        const topLabels = c.top_vehicles.map(item => item.vehicle_id);
+        const topCosts = c.top_vehicles.map(item => item.charging_cost);
+        
+        const ctxTop = document.getElementById('admin-top-charging-chart').getContext('2d');
+        adminTopChargingChart = new Chart(ctxTop, {
+          type: 'bar',
+          data: {
+            labels: topLabels,
+            datasets: [{
+              label: 'Charging Costs',
+              data: topCosts,
+              backgroundColor: 'rgba(255, 90, 0, 0.7)',
+              borderColor: 'var(--orange)',
+              borderWidth: 1
+            }]
+          },
+          options: getChartThemeOptions(true)
+        });
+        
+        // Monthly Trend Line Chart
+        if (adminChargingTrendChart) {
+          adminChargingTrendChart.destroy();
+        }
+        const trendLabels = c.monthly_trend.map(item => item.month);
+        const trendCosts = c.monthly_trend.map(item => item.cost);
+        
+        const ctxTrend = document.getElementById('admin-charging-trend-chart').getContext('2d');
+        adminChargingTrendChart = new Chart(ctxTrend, {
+          type: 'line',
+          data: {
+            labels: trendLabels,
+            datasets: [{
+              label: 'Charging Costs',
+              data: trendCosts,
+              borderColor: 'var(--orange)',
+              backgroundColor: 'rgba(255, 90, 0, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointBackgroundColor: 'var(--orange)'
+            }]
+          },
+          options: getChartThemeOptions(true)
+        });
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function fetchAdminAlerts() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/alerts`);
+        if (!res.ok) throw new Error('Alerts error');
+        const al = await res.json();
+        
+        const alertsTabEmergencyArea = document.getElementById('admin-alerts-tab-emergency-area');
+        if (al.emergencies && al.emergencies.length > 0) {
+          alertsTabEmergencyArea.style.display = 'block';
+          let emergencyItemsHtml = '';
+          al.emergencies.forEach(e => {
+            emergencyItemsHtml += `<div style="font-weight:700; font-size:1.05rem; display:flex; gap:10px; align-items:center;"><i class="fa-solid fa-triangle-exclamation"></i> ${e.message} <span style="font-size:0.8rem; font-weight:400; color:rgba(255,255,255,0.7);">(${e.timestamp})</span></div>`;
+          });
+          alertsTabEmergencyArea.innerHTML = `
+            <div class="card" style="border: 2px solid #ff3366; background: rgba(255, 51, 102, 0.08); border-radius: 12px; padding: 1.2rem; box-shadow: 0 0 20px rgba(255, 51, 102, 0.25); animation: blink-shadow 2s infinite alternate; width:100%;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <h3 style="color:#ff3366; margin:0 0 6px 0; font-family:'Bebas Neue'; font-size:1.6rem; letter-spacing:1px;"><i class="fa-solid fa-bell"></i> CRITICAL DRIVER EMERGENCY DETECTED</h3>
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${emergencyItemsHtml}
+                  </div>
+                </div>
+                <button class="btn" onclick="resolveEmergencies()" style="background:#ff3366; color:#fff; font-weight:700; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-family:'Rajdhani'; letter-spacing:1px; box-shadow:0 4px 10px rgba(255,51,102,0.3); transition:all 0.3s ease;">
+                  <i class="fa-solid fa-circle-check"></i> RESOLVE ALL ALERTS
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          alertsTabEmergencyArea.style.display = 'none';
+        }
+        
+        const fillAlertContainer = (list, elementId, typeIcon, color) => {
+          const div = document.getElementById(elementId);
+          div.innerHTML = '';
+          if (list.length === 0) {
+            div.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Zero alerts logged for this event.</div>';
+          } else {
+            list.forEach(item => {
+              const msg = item.message;
+              div.innerHTML += `
+                <div class="alert-item" style="--alert-color: ${color}">
+                  <i class="fa-solid ${typeIcon}"></i>
+                  <div class="alert-item-msg">${msg}</div>
+                </div>
+              `;
+            });
+          }
+        };
+        
+        fillAlertContainer(al.critical_battery, 'al-list-battery', 'fa-battery-empty', 'var(--alert)');
+        fillAlertContainer(al.degraded_health, 'al-list-health', 'fa-heart-crack', 'var(--warning)');
+        fillAlertContainer(al.in_garage, 'al-list-garage', 'fa-screwdriver-wrench', 'var(--orange)');
+        fillAlertContainer(al.overspeeding, 'al-list-overspeed', 'fa-gauge-high', 'var(--alert)');
+        
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ==========================================
+    // DRIVER DASHBOARD MODULE
+    // ==========================================
+
+    async function fetchDriverDashboard(driverId) {
+      try {
+        console.log('Fetching dashboard for driver:', driverId);
+        const res = await fetch(`${BACKEND_URL}/api/driver/dashboard/${driverId}`);
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Driver dashboard API error:', res.status, errorText);
+          throw new Error('Driver dashboard details API error');
+        }
+        const data = await res.json();
+        console.log('Driver dashboard data received:', data);
+        
+        // Update driver header with name, license, and total salary
+        document.getElementById('driver-user-name').textContent = data.driver_name || 'Driver';
+        document.getElementById('driver-user-id').textContent = data.driver_id || '--';
+        document.getElementById('driver-user-license').textContent = data.license_number || 'N/A';
+        document.getElementById('driver-total-salary').textContent = formatRupees(data.total_salary_earned || 0);
+        
+        // Column 1: Vehicle details
+        document.getElementById('drv-v-id').textContent = data.vehicle_info.vehicle_id || '--';
+        document.getElementById('drv-v-brand-model').textContent = `${data.vehicle_info.brand || '--'} ${data.vehicle_info.model || ''}`;
+        
+        // Load driver vehicle image
+        const driverVehicleImage = document.getElementById('driver-vehicle-image');
+        const driverVehiclePlaceholder = document.getElementById('driver-vehicle-image-placeholder');
+        const getImagePath = (brand, model) => {
+          const normalized = `${brand} ${model}`.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+          const imageMap = {
+            'mahindra_be_6': 'car_png/mahindra_be6.png',
+            'mahindra_be6': 'car_png/mahindra_be6.png',
+            'hyundai_creta_ev': 'car_png/hyundai_creta.png',
+            'hyundai_creta': 'car_png/hyundai_creta.png',
+            'tata_tiago_ev': 'car_png/tata_tiago.png',
+            'tata_tiago': 'car_png/tata_tiago.png',
+            'tata_xpres_t_ev': 'car_png/tata_xpres_t.png',
+            'tata_xprest_ev': 'car_png/tata_xpres_t.png',
+            'suzuki_vitara': 'car_png/suzuki_evitara.png',
+            'suzuki_evitara': 'car_png/suzuki_evitara.png'
+          };
+          return imageMap[normalized];
+        };
+        const driverImagePath = getImagePath(data.vehicle_info.brand, data.vehicle_info.model);
+        if (driverImagePath) {
+          driverVehicleImage.src = driverImagePath;
+          driverVehicleImage.style.display = 'block';
+          driverVehiclePlaceholder.style.display = 'none';
+          driverVehicleImage.onerror = function() {
+            driverVehicleImage.style.display = 'none';
+            driverVehiclePlaceholder.style.display = 'block';
+            driverVehiclePlaceholder.textContent = 'Image not available';
+          };
+        } else {
+          driverVehicleImage.style.display = 'none';
+          driverVehiclePlaceholder.style.display = 'block';
+          driverVehiclePlaceholder.textContent = 'No image for this model';
+        }
+        
+        document.getElementById('drv-v-capacity').textContent = `${data.vehicle_info.battery_capacity_kwh || '--'} kWh`;
+        document.getElementById('drv-v-battery').textContent = `${formatNumber(data.vehicle_info.current_battery, 0)}%`;
+        document.getElementById('drv-v-health').textContent = `${formatNumber(data.vehicle_info.battery_health, 0)}%`;
+        document.getElementById('drv-v-range').textContent = `${formatNumber(data.vehicle_info.current_range, 0)} km`;
+        document.getElementById('drv-v-odometer').textContent = `${formatNumber(data.vehicle_info.odometer_km, 1)} km`;
+        document.getElementById('drv-v-charge-count').textContent = data.vehicle_info.charge_count || '--';
+        document.getElementById('drv-v-status').textContent = data.vehicle_info.current_status || '--';
+        
+        const statusEl = document.getElementById('drv-v-status');
+        if (data.vehicle_info.current_status === 'Running') {
+          statusEl.style.color = 'var(--success)';
+        } else if (data.vehicle_info.current_status === 'Charging') {
+          statusEl.style.color = 'var(--orange)';
+        } else {
+          statusEl.style.color = 'var(--alert)';
+        }
+
+        // Column 2: Today's driving summary
+        document.getElementById('drv-summary-distance').textContent = `${formatNumber(data.trip_summary.todays_distance_km, 1)} km`;
+        document.getElementById('drv-summary-trips').textContent = data.trip_summary.todays_trips;
+        document.getElementById('drv-summary-passengers').textContent = data.trip_summary.passengers_transported;
+        document.getElementById('drv-summary-drive-type').textContent = data.trip_summary.todays_drive_type || '--';
+        document.getElementById('drv-summary-revenue').textContent = formatRupees(data.trip_summary.revenue_generated_today);
+
+        // Column 3: Driving behaviour
+        document.getElementById('drv-behavior-overspeed').textContent = data.driving_behaviour.overspeed_count;
+        document.getElementById('drv-behavior-avg-speed').textContent = `${formatNumber(data.driving_behaviour.average_speed_kmph, 1)} km/h`;
+        document.getElementById('drv-behavior-max-speed').textContent = `${formatNumber(data.driving_behaviour.maximum_speed_kmph, 1)} km/h`;
+        document.getElementById('drv-behavior-ecoscore').textContent = data.driving_behaviour.eco_score;
+
+        // Prefill prediction form
+        document.getElementById('drv-p-batt').value = Math.round(data.vehicle_info.current_battery);
+        document.getElementById('drv-p-health').value = Math.round(data.vehicle_info.battery_health);
+        document.getElementById('drv-p-speed').value = Math.round(data.driving_behaviour.average_speed_kmph) || 60;
+        document.getElementById('drv-p-odometer').value = Math.round(data.vehicle_info.odometer_km);
+        document.getElementById('drv-p-charge-count').value = data.vehicle_info.charge_count || 0;  // NEW: Auto-fill charge count
+        
+        // Set default model based on assigned vehicle
+        const modelMap = {
+          'Mahindra BE 6': 'mahindra_be6',
+          'Tata Nexon EV': 'tata_nexon',
+          'Tata Tiago EV': 'tata_tiago',
+          'Tata Xpres T EV': 'tata_xpres',
+          'Hyundai Creta EV': 'hyundai_creta',
+          'Suzuki e-Vitara': 'suzuki_vitara'
+        };
+        const vehicleKey = `${data.vehicle_info.brand} ${data.vehicle_info.model}`;
+        const modelValue = modelMap[vehicleKey] || 'tata_nexon';
+        document.getElementById('drv-p-model').value = modelValue;
+
+        // Populate maintenance recommendation alerts list
+        const mAlertsDiv = document.getElementById('drv-maintenance-alerts-list');
+        mAlertsDiv.innerHTML = '';
+        
+        const typeColors = {
+          success: 'var(--success)',
+          warning: 'var(--warning)',
+          danger: 'var(--alert)',
+          info: 'var(--primary)'
+        };
+        const typeIcons = {
+          success: 'fa-circle-check',
+          warning: 'fa-triangle-exclamation',
+          danger: 'fa-triangle-exclamation',
+          info: 'fa-circle-info'
+        };
+
+        if (data.maintenance_alerts && data.maintenance_alerts.length > 0) {
+          data.maintenance_alerts.forEach(alert => {
+            const color = typeColors[alert.type] || 'var(--text)';
+            const icon = typeIcons[alert.type] || 'fa-circle-info';
+            mAlertsDiv.innerHTML += `
+              <div class="alert-item" style="--alert-color: ${color}; display:flex; gap:12px; align-items:center; padding:12px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05);">
+                <i class="fa-solid ${icon}" style="color:${color}; font-size:1.1rem;"></i>
+                <div class="alert-item-msg" style="color:var(--text); font-weight:600; font-size:0.9rem;">${alert.message}</div>
+              </div>
+            `;
+          });
+        } else {
+          mAlertsDiv.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">No active systems alerts. All nominal.</div>';
+        }
+
+        // Load driver salary data
+        loadDriverSalary(driverId);
+      } catch (err) {
+        console.error("Error fetching driver dashboard:", err);
+        // Show error message to user
+        alert(`Unable to load driver dashboard. Please check:\n1. You are logged in as a driver (D001-D010)\n2. Backend server is running\n3. Database has driver data\n\nError: ${err.message}`);
+      }
+    }
+
+    async function loadDriverSalary(driverId) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/driver/salary-details/${driverId}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        document.getElementById('drv-salary-trips').textContent = data.total_trips;
+        document.getElementById('drv-salary-distance').textContent = `${formatNumber(data.total_distance_km, 1)} km`;
+        document.getElementById('drv-salary-avg-distance').textContent = `${formatNumber(data.average_trip_distance, 1)} km`;
+        document.getElementById('drv-salary-total').textContent = formatRupees(data.total_salary_earned);
+        
+        // Populate recent trips table
+        const tbody = document.getElementById('drv-recent-trips-tbody');
+        if (data.recent_trips && data.recent_trips.length > 0) {
+          tbody.innerHTML = data.recent_trips.map(trip => `
+            <tr>
+              <td>${trip.trip_date}</td>
+              <td><strong style="color:var(--orange);">${trip.vehicle_id || '--'}</strong></td>
+              <td>${formatNumber(trip.destination_km, 1)} km</td>
+              <td><strong style="color:var(--success);">${formatRupees(trip.salary_earned)}</strong></td>
+              <td><span class="status-badge ${trip.status.toLowerCase()}">${trip.status}</span></td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No trip assignments yet.</td></tr>';
+        }
+      } catch (err) {
+        console.error("Error loading driver salary:", err);
+        document.getElementById('drv-salary-trips').textContent = '0';
+        document.getElementById('drv-salary-distance').textContent = '0.0 km';
+        document.getElementById('drv-salary-avg-distance').textContent = '0.0 km';
+        document.getElementById('drv-salary-total').textContent = '₹0.00';
+        document.getElementById('drv-recent-trips-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No salary data available.</td></tr>';
+      }
+    }
+
+    async function triggerEmergencyAlert() {
+      const btn = document.getElementById('driver-emergency-btn');
+      const oldText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SENDING ALERT...';
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/driver/emergency`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: currentDriverId })
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        alert("Emergency alert has been successfully broadcast to all system administrators!");
+      } catch (err) {
+        alert("Failed to submit emergency alert. Please check your connectivity.");
+      } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+      }
+    }
+
+    async function resolveEmergencies() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/clear-emergencies`, {
+          method: 'POST'
+        });
+        if (!res.ok) throw new Error();
+        // Refresh admin alerts & overview layout
+        fetchAdminOverview();
+        fetchAdminAlerts();
+      } catch (err) {
+        alert("Error resolving emergencies.");
+      }
+    }
+
+    // Driver range prediction submit handler
+    document.getElementById('driver-predict-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('drv-p-submit-btn');
+      const oldText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-gear fa-spin"></i> CALCULATING...';
+      btn.disabled = true;
+      
+      const payload = {
+        driver_id: currentDriverId,
+        battery_percentage: parseFloat(document.getElementById('drv-p-batt').value),
+        battery_health: parseFloat(document.getElementById('drv-p-health').value),
+        speed_kmph: parseFloat(document.getElementById('drv-p-speed').value),
+        odometer_km: parseFloat(document.getElementById('drv-p-odometer').value),
+        charge_count: parseInt(document.getElementById('drv-p-charge-count').value) || 0,  // NEW
+        location_type: document.getElementById('drv-p-location').value,
+        vehicle_model: document.getElementById('drv-p-model').value
+      };
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/driver/range-predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        // Check for validation error
+        if (!res.ok) {
+          alert(data.error || "Invalid input values. Please check your entries.");
+          return;
+        }
+        
+        // Update display
+        document.getElementById('drv-p-output-val').innerHTML = `${formatNumber(data.predicted_range_km, 1)} <span style="font-size:0.9rem; font-family:'Rajdhani'; font-weight:600;">km</span>`;
+        
+        // Update max range display
+        const maxRange = data.vehicle_specs_used?.max_range_km || 400;
+        document.getElementById('vehicle-max-range-display').textContent = maxRange.toFixed(0);
+        
+        // Draw speedometer gauge
+        drawRangeGauge(data.predicted_range_km, maxRange);
+        
+      } catch (err) {
+        alert("Autonomy prediction module error. Please check your connection.");
+      } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // DRIVER MANAGEMENT MODULE
+    // ═══════════════════════════════════════════════════════════════
+
+    let allDriversData = [];
+
+    async function loadDriverManagement() {
+      await generateNextDriverId();
+      await loadAllDrivers();
+      await loadDriverDropdown();
+    }
+
+    async function generateNextDriverId() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/list`);
+        if (!res.ok) throw new Error();
+        const drivers = await res.json();
+        
+        // Find highest driver number
+        let maxNum = 0;
+        drivers.forEach(d => {
+          const match = d.driver_id.match(/D(\d+)/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNum) maxNum = num;
+          }
+        });
+        
+        const nextNum = maxNum + 1;
+        const nextId = `D${String(nextNum).padStart(3, '0')}`;
+        document.getElementById('new-driver-id').value = nextId;
+      } catch (err) {
+        document.getElementById('new-driver-id').value = 'D021';
+      }
+    }
+
+    async function loadAllDrivers() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/list`);
+        if (!res.ok) throw new Error();
+        const drivers = await res.json();
+        allDriversData = drivers;
+        
+        const tbody = document.getElementById('drivers-mgmt-tbody');
+        if (drivers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No drivers found. Add your first driver above.</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = drivers.map(d => `
+          <tr>
+            <td><strong style="color: var(--primary);">${d.driver_id}</strong></td>
+            <td>${d.driver_name}</td>
+            <td style="font-family: monospace; font-size: 0.9rem;">${d.license_number}</td>
+            <td style="font-size: 0.9rem;">${d.email || '--'}</td>
+            <td style="font-size: 0.9rem;">${d.phone || '--'}</td>
+            <td><strong style="color: var(--orange);">${d.assigned_vehicle_id || '--'}</strong></td>
+            <td style="color: var(--success); font-weight: 600;">₹${formatNumber(d.base_salary_per_km, 1)}</td>
+            <td>
+              <button onclick="openUpdateModal('${d.driver_id}')" style="padding: 6px 12px; background: var(--primary); color: var(--white); border: none; border-radius: 4px; cursor: pointer; margin-right: 6px; font-size: 0.85rem;">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <button onclick="deleteDriver('${d.driver_id}')" style="padding: 6px 12px; background: var(--alert); color: var(--white); border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadDriverDropdown() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/list`);
+        if (!res.ok) throw new Error();
+        const drivers = await res.json();
+        
+        const select = document.getElementById('trip-driver-id');
+        select.innerHTML = '<option value="">Select Driver</option>' + 
+          drivers.map(d => `<option value="${d.driver_id}">${d.driver_id} - ${d.driver_name}</option>`).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('add-driver-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        driver_id: document.getElementById('new-driver-id').value.trim(),
+        driver_name: document.getElementById('new-driver-name').value.trim(),
+        license_number: document.getElementById('new-driver-license').value.trim(),
+        email: document.getElementById('new-driver-email').value.trim(),
+        phone: document.getElementById('new-driver-phone').value.trim(),
+        assigned_vehicle_id: document.getElementById('new-driver-vehicle').value.trim(),
+        base_salary_per_km: parseFloat(document.getElementById('new-driver-salary').value)
+      };
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to add driver');
+          return;
+        }
+        
+        alert(`✓ Driver ${payload.driver_id} added successfully!`);
+        document.getElementById('add-driver-form').reset();
+        document.getElementById('new-driver-salary').value = '2.30';
+        await loadDriverManagement();
+      } catch (err) {
+        alert('Error adding driver');
+        console.error(err);
+      }
+    });
+
+    document.getElementById('assign-trip-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        driver_id: document.getElementById('trip-driver-id').value,
+        vehicle_id: document.getElementById('trip-vehicle-id').value.trim(),
+        trip_date: document.getElementById('trip-date').value,
+        destination_km: parseFloat(document.getElementById('trip-distance').value)
+      };
+      
+      if (!payload.driver_id) {
+        alert('Please select a driver');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/assign-trip`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to assign trip');
+          return;
+        }
+        
+        const data = await res.json();
+        alert(`✓ Trip assigned successfully!\n💰 Salary Rate: ₹${data.salary_rate}/km\n💵 Salary earned: ₹${formatNumber(data.salary_earned, 2)}\n📅 Status: Pending`);
+        document.getElementById('assign-trip-form').reset();
+        document.getElementById('trip-date').valueAsDate = new Date();
+      } catch (err) {
+        alert('Error assigning trip');
+        console.error(err);
+      }
+    });
+
+    function openUpdateModal(driverId) {
+      const driver = allDriversData.find(d => d.driver_id === driverId);
+      if (!driver) return;
+      
+      document.getElementById('update-driver-id').value = driver.driver_id;
+      document.getElementById('update-driver-name').value = driver.driver_name;
+      document.getElementById('update-driver-license').value = driver.license_number;
+      document.getElementById('update-driver-email').value = driver.email || '';
+      document.getElementById('update-driver-phone').value = driver.phone || '';
+      document.getElementById('update-driver-vehicle').value = driver.assigned_vehicle_id || '';
+      document.getElementById('update-driver-salary').value = driver.base_salary_per_km;
+      
+      document.getElementById('update-driver-modal').style.display = 'flex';
+    }
+
+    function closeUpdateModal() {
+      document.getElementById('update-driver-modal').style.display = 'none';
+    }
+
+    document.getElementById('update-driver-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const driverId = document.getElementById('update-driver-id').value;
+      const payload = {
+        driver_name: document.getElementById('update-driver-name').value.trim(),
+        license_number: document.getElementById('update-driver-license').value.trim(),
+        email: document.getElementById('update-driver-email').value.trim(),
+        phone: document.getElementById('update-driver-phone').value.trim(),
+        assigned_vehicle_id: document.getElementById('update-driver-vehicle').value.trim(),
+        base_salary_per_km: parseFloat(document.getElementById('update-driver-salary').value)
+      };
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/update/${driverId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error();
+        
+        alert(`✓ Driver ${driverId} updated successfully!`);
+        closeUpdateModal();
+        await loadAllDrivers();
+        await loadDriverDropdown();
+      } catch (err) {
+        alert('Error updating driver');
+        console.error(err);
+      }
+    });
+
+    async function deleteDriver(driverId) {
+      if (!confirm(`⚠️ Are you sure you want to delete driver ${driverId}?\n\nThis action cannot be undone.`)) return;
+      
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/driver-management/delete/${driverId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!res.ok) throw new Error();
+        
+        alert(`✓ Driver ${driverId} deleted successfully!`);
+        await loadDriverManagement();
+      } catch (err) {
+        alert('Error deleting driver');
+        console.error(err);
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('update-driver-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'update-driver-modal') {
+        closeUpdateModal();
+      }
+    });
+
+    // Set today's date as default for trip assignment
+    document.getElementById('trip-date').valueAsDate = new Date();
+
+  </script>
+</body>
+</html>

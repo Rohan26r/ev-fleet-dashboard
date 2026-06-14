@@ -1,0 +1,18 @@
+# OS generated files
+__pycache__/
+*.pyc
+.DS_Store
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Large Machine Learning Models (Exceeds GitHub's 100MB limit)
+*.pkl
+
+# Databases
+# users.db (Commented out: usually ignored, but if you want to push initial state, leave commented)
+
+# VS Code
+.vscode/

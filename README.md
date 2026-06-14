@@ -30,10 +30,13 @@ The project follows a modular, monolithic architecture:
 
 ## 📊 Data Generation
 
-Because real-world, high-fidelity EV telemetry data is often proprietary, this project includes a robust data generator (`generate_dataset.py`).
+Because real-world, high-fidelity EV telemetry data is often proprietary, this project includes a robust, highly sophisticated data generator (`generate_dataset.py`).
 
-*   **Stateful Simulation:** The generator produces highly realistic, stateful trips, ensuring continuity in odometer readings and battery discharge cycles across multiple drivers.
-*   **Physics-Based Variables:** It mathematically models the relationship between speed, battery temperature, vehicle weight, motor RPM, and battery capacity.
+Unlike simple random CSV generators, this script builds a **Stateful Digital Twin** of the entire fleet:
+*   **Chronological Simulation by Vehicle ID:** The script iterates chronologically in 30-minute time slots from March to June. During every single slot, it updates the specific state of each individual vehicle (`E001`, `E002`, etc.).
+*   **Continuous Battery Drain:** Instead of randomizing battery levels, each vehicle maintains a `current_battery_pct`. When a vehicle is "running," the script calculates the exact energy consumed based on the vehicle's weight, passenger count, battery health, and driving speed (speeds > 80km/h trigger a 1.2x faster drain). This consumed energy is subtracted from the vehicle's specific battery percentage.
+*   **Organic Degradation:** As days pass and vehicles undergo more charging cycles, overspeeding events, and high battery temperatures, their `battery_health_pct` permanently degrades. This dynamically lowers their maximum achievable range over time.
+*   **Dead-Battery Edge Cases:** The generator specifically injects 20,000 "dead battery" rows where `battery_percentage = 0` to explicitly train the ML model that a dead battery strictly equals a 0 km range.
 *   **Output:** The script generates `nev_fleet_dataset_v16_odo.csv`, which serves as both the training ground for the ML model and the simulated live database for the backend dashboard.
 
 ---
